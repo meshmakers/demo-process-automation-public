@@ -13,8 +13,4 @@
     <ItemGroup>
         <ConstructionKitFolder Visible="false" Include="$(MSBuildProjectDirectory)\ConstructionKit"/>
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="ConstructionKit\associations\" />
-    </ItemGroup>
 </Project>

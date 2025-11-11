@@ -27,5 +27,5 @@ attributes:
     description: "Example: Invoice No: 2025-09-15-001"
   - id: DocumentState
     valueType: Enum
-    valueCkEnumId: ${thisModel}/AccountingDocumentState
+    valueCkEnumId: ${this}/AccountingDocumentState
     description: "Defines the state of the document in the accounting process"

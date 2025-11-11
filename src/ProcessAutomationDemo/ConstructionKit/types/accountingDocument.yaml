@@ -1,22 +1,22 @@
 $schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
 types:
   - typeId: AccountingDocument
-    derivedFromCkTypeId: System/Entity
+    derivedFromCkTypeId: ${System}/Entity
     description: "An accounting related document entity that contains accounting information."
     attributes:
       - id: Basic/Comment
         name: Comment
         isOptional: true
-      - id: ${thisModel}/GrossTotal
+      - id: ${this}/GrossTotal
         name: GrossTotal
         isOptional: true
-      - id: ${thisModel}/NetTotal
+      - id: ${this}/NetTotal
         name: NetTotal
         isOptional: true
-      - id: ${thisModel}/TaxTotal
+      - id: ${this}/TaxTotal
         name: TaxTotal
         isOptional: true
-      - id: ${thisModel}/Issuer
+      - id: ${this}/Issuer
         name: Issuer
         isOptional: true
       - id: Basic/BankAccount
@@ -28,10 +28,10 @@ types:
       - id: Basic/DocumentDate
         name: DocumentDate
         isOptional: true
-      - id: ${thisModel}/TransactionNumber
+      - id: ${this}/TransactionNumber
         name: TransactionNumber
         isOptional: true
-      - id: ${thisModel}/DocumentState
+      - id: ${this}/DocumentState
         name: DocumentState
         isOptional: true
 

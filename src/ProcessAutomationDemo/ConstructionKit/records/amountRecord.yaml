@@ -2,7 +2,7 @@ $schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
 records:
   - recordId: AmountRecord
     attributes:
-      - id: ${thisModel}/AmountValue
+      - id: ${this}/AmountValue
         name: Value
-      - id: ${thisModel}/Currency
+      - id: ${this}/Currency
         name: Currency

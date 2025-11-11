@@ -5,9 +5,9 @@ attributes:
     description: "Amount | Example: 1234.56"
   - id: Currency
     valueType: Enum
-    valueCkEnumId: ${thisModel}/CurrencyEnum
+    valueCkEnumId: ${this}/CurrencyEnum
     description: "Currency | Example: EUR"
   - id: Amount
     valueType: Record
-    valueCkRecordId: ${thisModel}/AmountRecord
+    valueCkRecordId: ${this}/AmountRecord
     description: "Amount including currency RECORD | Example: { Value: 1234.56, Currency: 'EUR' }"
