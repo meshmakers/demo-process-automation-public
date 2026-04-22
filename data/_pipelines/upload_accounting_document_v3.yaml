@@ -1,33 +1,157 @@
 $schema: https://schemas.meshmakers.cloud/runtime-model.schema.json
-dependencies: []
+dependencies:
+  - System.Communication-[3.0,4.0)
 entities:
-- rtId: 68e24109cd702ddd247d4eb5
-  rtCreationDateTime: 2025-10-05T09:57:29.4700000Z
-  rtChangedDateTime: 2025-10-05T09:59:10.4810000Z
-  ckTypeId: System.Communication-1.0.0/MeshPipeline-1.0.0
-  associations:
-  - roleId: System-1.0.0/ParentChild-1.0.0
-    targetRtId: 68e24109cd702ddd247d4eb4
-    targetCkTypeId: System.Communication-1.0.0/DataPipeline-1.0.0
-    attributes: []
-  attributes:
-  - id: System.Communication-1.0.0/DeploymentState-1.0.0
-    value: 0
-  - id: System-1.0.0/Name-1.0.0
-    value: Mesh Pipeline
-  - id: System.Communication-1.0.0/StatusMessage-1.0.0
-  - id: System-1.0.0/Enabled-1.0.0
-    value: true
-  - id: System.Communication-1.0.0/PipelineDefinition-1.0.0
-    value: "triggers:\n  - type: FromHttpRequest@1\n    path: /uploadAccountingDocumentv3\n    method: POST\ntransformations:\n  - type: Logger@1\n    message: test\n  - type: If@1\n    description: if allowed content type\n    path: $.contentType\n    operator: Equals\n    value: \"application/pdf\"\n    valueType: String\n    transformations:\n      - type: CreateFileSystemUpdate@1\n        targetPath: $.fileSystemItem\n        path: $.body\n        generateRtId: true\n        generateFileName: true\n        contentTypePath: $.contentType\n        contentLengthPath: $.contentLength\n        rootFolderWellKnownName: \"Accounting\"\n      - type: PdfOcrExtraction@1\n        path: $.body\n        targetPath: $.ocr.result\n        includeConfidence: true\n        confidenceOutputPath: $.ocr.confidence\n      - type: AnthropicAiQuery@1\n        question: Extract all relevant accounting information, as shown in the example. The data may be encoded in UTF-8.\n        path: $.ocr.result\n        temperature: 0.1\n        responseFormat: json\n        targetPath: $.ai.result\n        jsonFormatSample: '{ \"amount\": { \"grossTotal\": 1200.00, \"netTotal\": 1000.00, \"taxTotal\": 200.00 }, \"bankAccount\": { \"accountHolder\": \"BigComp GmbH\", \"iban\": \"AT741233964761549439\" }, \"issuer\": { \"companyName\": \"BigComp GmbH\", \"address\": { \"cityTown\": \"Salzburg\", \"nationlCode\": \"AT\", \"street\": \"Hauptstraße\", \"zipcode\": 5020 } }, \"transaction\": { \"date\": \"2025-09-30\", \"number\": \"inv-20250930-abc\" } }'\n      - type: Project@1\n        fields:\n          - path: \"$.body\"\n          - path: \"$.bodyEncoding\"\n          - path: \"$.path\"  \n          - path: \"$.contentType\"\n          - path: \"$.contentLength\"\n          - path: \"$.method\"  \n      - type: CreateUpdateInfo@1\n        targetPath: $.updates._items\n        targetValueKind: Array\n        targetValueWriteMode: Append        \n        updateKind: INSERT\n        ckTypeId: AccountingDemo/AccountingDocument\n        rtIdPath: $.rtId\n        generateRtId: true\n        attributeUpdates:\n          - attributeName: BankAccount.AccountHolder\n            attributeValueType: String\n            valuePath: $.ai.result.bankAccount.accountHolder\n          - attributeName: BankAccount.Iban\n            attributeValueType: String\n            valuePath: $.ai.result.bankAccount.iban\n          - attributeName: DocumentDate\n            attributeValueType: DateTime\n            valuePath: $.ai.result.transaction.date\n          - attributeName: TransactionNumber\n            attributeValueType: String\n            valuePath: $.ai.result.transaction.number\n          - attributeName: DocumentState\n            attributeValueType: Enum\n            value: \"NEW\"\n          - attributeName: Issuer.LegalEntityType\n            attributeValueType: Enum\n            value: \"COMPANY\"\n          - attributeName: Issuer.CompanyName\n            attributeValueType: String\n            valuePath: $.ai.result.issuer.companyName\n          - attributeName: Issuer.Address.Street\n            attributeValueType: String\n            valuePath: $.ai.result.issuer.address.street\n          - attributeName: Issuer.Address.Zipcode\n            attributeValueType: Int\n            valuePath: $.ai.result.issuer.address.zipcode\n          - attributeName: Issuer.Address.CityTown\n            attributeValueType: String\n            valuePath: $.ai.result.issuer.address.cityTown\n          - attributeName: Issuer.Address.NationalCode\n            attributeValueType: String\n            valuePath: $.ai.result.issuer.address.nationalCode\n          - attributeName: GrossTotal\n            attributeValueType: Double\n            valuePath: $.ai.result.amount.grossTotal\n          - attributeName: NetTotal\n            attributeValueType: Double\n            valuePath: $.ai.result.amount.netTotal\n          - attributeName: TaxTotal\n            attributeValueType: Double\n            valuePath: $.ai.result.amount.taxTotal\n      - type: CreateAssociationUpdate@1\n        targetPath: $.updates._assocUpdateItems\n        targetValueKind: Array\n        targetValueWriteMode: Append\n        updateKind: CREATE\n        originRtIdPath: $.updates._items[0].RtEntity.RtId\n        originCkTypeIdPath: $.updates._items[0].RtEntity.CkTypeId\n        targetRtIdPath: $.fileSystemItem.RtId\n        targetCkTypeIdPath: $.fileSystemItem.CkTypeId\n        associationRoleId: System/Related\n      - type: ApplyChanges@2\n        entityUpdatesPath: $.updates._items\n        associationUpdatesPath: $.updates._assocUpdateItems        \n      - type: Project@1\n        fields:\n          - path: \"$.updates\"\n     \n"
-- rtId: 68e24109cd702ddd247d4eb4
-  rtCreationDateTime: 2025-10-05T09:57:29.4370000Z
-  rtChangedDateTime: 2025-10-05T09:58:26.3650000Z
-  ckTypeId: System.Communication-1.0.0/DataPipeline-1.0.0
-  associations: []
-  attributes:
-  - id: System-1.0.0/Name-1.0.0
-    value: upload_accounting_document_v3
-  - id: System-1.0.0/Description-1.0.0
-    value: >
-      Allows to upload an PDF document using HTTP including OCR and AI extraction of accounting data - including the extraction process of multiple attributes.
+  - rtId: 68e24109cd702ddd247d4eb4
+    rtCreationDateTime: 2025-10-05T09:57:29.4370000Z
+    rtChangedDateTime: 2025-10-05T09:58:26.3650000Z
+    ckTypeId: System.Communication/DataFlow
+    associations: []
+    attributes:
+      - id: System/Name
+        value: upload_accounting_document_v3
+      - id: System/Description
+        value: >
+          Allows to upload a PDF document using HTTP including OCR and AI extraction of accounting data - including the extraction process of multiple attributes.
+  - rtId: 68e24109cd702ddd247d4eb5
+    rtCreationDateTime: 2025-10-05T09:57:29.4700000Z
+    rtChangedDateTime: 2025-10-05T09:59:10.4810000Z
+    ckTypeId: System.Communication/Pipeline
+    associations:
+      - roleId: System/ParentChild
+        targetRtId: 68e24109cd702ddd247d4eb4
+        targetCkTypeId: System.Communication/DataFlow
+      - roleId: System.Communication/Executes
+        targetRtId: 67e10c0bfe3e19891bbfd261
+        targetCkTypeId: System.Communication/Adapter
+    attributes:
+      - id: System/Name
+        value: upload_accounting_document_v3_pipeline
+      - id: System/Description
+        value: >
+          Full-extraction variant of v2: OCRs the PDF, asks the AI for a rich
+          JSON (bank account, issuer, address, transaction, amounts), and
+          inserts an AccountingDocument with every field populated.
+      - id: System/Enabled
+        value: true
+      - id: System.Communication/PipelineDefinition
+        value: |-
+          triggers:
+            - type: FromHttpRequest@1
+              description: POST /uploadAccountingDocumentv3 — entry point for the full-extraction v3 upload endpoint
+              path: /uploadAccountingDocumentv3
+              method: POST
+          transformations:
+            - type: Logger@1
+              description: Debug log (kept to show pipeline is running; remove if noisy)
+              message: upload_accounting_document_v3 invoked
+            - type: If@1
+              description: Only process requests whose content type is application/pdf; drop everything else
+              path: $.contentType
+              operator: Equals
+              value: "application/pdf"
+              valueType: String
+              transformations:
+                - type: CreateFileSystemUpdate@1
+                  description: Store the uploaded PDF under the well-known "Accounting" root folder, auto-generate RtId and file name
+                  targetPath: $.fileSystemItem
+                  path: $.body
+                  generateRtId: true
+                  generateFileName: true
+                  contentTypePath: $.contentType
+                  contentLengthPath: $.contentLength
+                  rootFolderWellKnownName: "Accounting"
+                - type: PdfOcrExtraction@1
+                  description: OCR the PDF content, also emit a confidence score alongside the text
+                  path: $.body
+                  targetPath: $.ocr.result
+                  includeConfidence: true
+                  confidenceOutputPath: $.ocr.confidence
+                - type: AnthropicAiQuery@1
+                  description: Ask the AI to extract a full invoice JSON (amounts, bank account, issuer, address, transaction); the schema is conveyed via jsonFormatSample
+                  question: Extract all relevant accounting information, as shown in the example. The data may be encoded in UTF-8.
+                  path: $.ocr.result
+                  temperature: 0.1
+                  responseFormat: json
+                  targetPath: $.ai.result
+                  jsonFormatSample: '{ "amount": { "grossTotal": 1200.00, "netTotal": 1000.00, "taxTotal": 200.00 }, "bankAccount": { "accountHolder": "BigComp GmbH", "iban": "AT741233964761549439" }, "issuer": { "companyName": "BigComp GmbH", "address": { "cityTown": "Salzburg", "nationalCode": "AT", "street": "Hauptstraße", "zipcode": 5020 } }, "transaction": { "date": "2025-09-30", "number": "inv-20250930-abc" } }'
+                - type: Project@1
+                  description: Strip large/raw HTTP fields from the data context so the eventual response stays small
+                  fields:
+                    - path: "$.body"
+                    - path: "$.bodyEncoding"
+                    - path: "$.path"
+                    - path: "$.contentType"
+                    - path: "$.contentLength"
+                    - path: "$.method"
+                - type: CreateUpdateInfo@1
+                  description: Queue an INSERT for a new AccountingDocument, mapping every relevant AI-extracted JSON field onto the CK attribute it belongs to
+                  targetPath: $.updates._items
+                  targetValueKind: Array
+                  targetValueWriteMode: Append
+                  updateKind: INSERT
+                  ckTypeId: AccountingDemo/AccountingDocument
+                  rtIdPath: $.rtId
+                  generateRtId: true
+                  attributeUpdates:
+                    - attributeName: BankAccount.AccountHolder
+                      attributeValueType: String
+                      valuePath: $.ai.result.bankAccount.accountHolder
+                    - attributeName: BankAccount.Iban
+                      attributeValueType: String
+                      valuePath: $.ai.result.bankAccount.iban
+                    - attributeName: DocumentDate
+                      attributeValueType: DateTime
+                      valuePath: $.ai.result.transaction.date
+                    - attributeName: TransactionNumber
+                      attributeValueType: String
+                      valuePath: $.ai.result.transaction.number
+                    - attributeName: DocumentState
+                      attributeValueType: Enum
+                      value: "NEW"
+                    - attributeName: Issuer.LegalEntityType
+                      attributeValueType: Enum
+                      value: "COMPANY"
+                    - attributeName: Issuer.CompanyName
+                      attributeValueType: String
+                      valuePath: $.ai.result.issuer.companyName
+                    - attributeName: Issuer.Address.Street
+                      attributeValueType: String
+                      valuePath: $.ai.result.issuer.address.street
+                    - attributeName: Issuer.Address.Zipcode
+                      attributeValueType: Int
+                      valuePath: $.ai.result.issuer.address.zipcode
+                    - attributeName: Issuer.Address.CityTown
+                      attributeValueType: String
+                      valuePath: $.ai.result.issuer.address.cityTown
+                    - attributeName: Issuer.Address.NationalCode
+                      attributeValueType: String
+                      valuePath: $.ai.result.issuer.address.nationalCode
+                    - attributeName: GrossTotal
+                      attributeValueType: Double
+                      valuePath: $.ai.result.amount.grossTotal
+                    - attributeName: NetTotal
+                      attributeValueType: Double
+                      valuePath: $.ai.result.amount.netTotal
+                    - attributeName: TaxTotal
+                      attributeValueType: Double
+                      valuePath: $.ai.result.amount.taxTotal
+                - type: CreateAssociationUpdate@1
+                  description: Queue a System/Related association from the new AccountingDocument to the stored FileSystemItem
+                  targetPath: $.updates._assocUpdateItems
+                  targetValueKind: Array
+                  targetValueWriteMode: Append
+                  updateKind: CREATE
+                  originRtIdPath: $.updates._items[0].RtEntity.RtId
+                  originCkTypeIdPath: $.updates._items[0].RtEntity.CkTypeId
+                  targetRtIdPath: $.fileSystemItem.RtId
+                  targetCkTypeIdPath: $.fileSystemItem.CkTypeId
+                  associationRoleId: System/Related
+                - type: ApplyChanges@2
+                  description: Commit the queued entity insert + association to the database in one transaction
+                  entityUpdatesPath: $.updates._items
+                  associationUpdatesPath: $.updates._assocUpdateItems
+                - type: Project@1
+                  description: Strip the internal $.updates working area from the HTTP response
+                  fields:
+                    - path: "$.updates"

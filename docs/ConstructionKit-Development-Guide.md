@@ -28,10 +28,9 @@ ConstructionKit/
 ### 2.1 ckModel.yaml
 ```yaml
 $schema: https://schemas.meshmakers.cloud/construction-kit-meta.schema.json
-modelId: [ModelName]
+modelId: [ModelName]-1.0.0          # modelId enthält per Konvention die Version
 dependencies:
-  - Basic      # Fast immer benötigt für Basis-Typen
-  - System     # Für System-Entities
+  - Basic-[2.0,3.0)                 # NuGet-Versionsbereich; zieht System transitiv mit
   # - weitere Dependencies nach Bedarf
 ```
 
@@ -40,46 +39,58 @@ dependencies:
 $schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
 types:
   - typeId: [TypeName]
-    derivedFromCkTypeId: Basic/NamedEntity  # oder System/Entity
-    isAbstract: false  # true für abstrakte Basisklassen
+    derivedFromCkTypeId: ${Basic}/NamedEntity   # oder ${System}/Entity
+    isAbstract: false                           # true für abstrakte Basisklassen
     description: "Beschreibung der Entität"
     attributes:
-      - id: ${thisModel}/[AttributeName]  # Eigene Attribute
+      - id: ${this}/[AttributeName]             # Eigene Attribute
         name: [DisplayName]
-        isOptional: true/false
-        autoIncrementReference: "[SequenceName]"  # Für Auto-IDs
-      - id: Basic/[BasicAttribute]  # Wiederverwendung von Basic
+        isOptional: true                        # optional, default: false
+        autoIncrementReference: "[SequenceName]" # Für Auto-IDs
+      - id: ${Basic}/[BasicAttribute]           # Wiederverwendung aus Basic
         name: [DisplayName]
     associations:
-      - id: ${thisModel}/[AssociationName]
-        targetCkTypeId: ${thisModel}/[TargetType]
-        cardinality: One/ZeroOrOne/ZeroOrMany/Many
-      - id: System/ParentChild  # Für hierarchische Beziehungen
-        targetCkTypeId: ${thisModel}/[ParentType]
+      - id: ${this}/[AssociationName]           # verweist auf einen associationRole
+        targetCkTypeId: ${this}/[TargetType]
+      - id: ${System}/ParentChild               # Vordefinierte hierarchische Beziehung
+        targetCkTypeId: ${this}/[ParentType]
 ```
+
+> Hinweis: An einer Association innerhalb eines Types gibt es kein
+> `cardinality`-Feld. Die Multiplizität wird ausschließlich am referenzierten
+> `associationRole` definiert (siehe 2.5).
 
 ### 2.3 Attributes
 ```yaml
 $schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
 attributes:
   - id: [AttributeName]
-    valueType: String/Integer/Decimal/Boolean/DateTime/Enum/Record/BinaryLinked
-    valueCkEnumId: ${thisModel}/[EnumName]  # Bei Enum-Type
-    valueCkRecordId: ${thisModel}/[RecordName]  # Bei Record-Type
-    isMultiValue: true/false  # Für Arrays
+    valueType: String                          # siehe Liste der erlaubten Werte unten
+    valueCkEnumId: ${this}/[EnumName]          # nur bei valueType Enum
+    valueCkRecordId: ${this}/[RecordName]      # nur bei valueType Record / RecordArray
     description: "Attribut-Beschreibung"
     defaultValues:
       - [DefaultValue]
     metaData:
       - key: Unit
-        value: "EUR/h"  # Einheit
+        value: "EUR/h"                         # Einheit
       - key: MinValue
         value: "0"
-      - key: MaxValue  
+      - key: MaxValue
         value: "100"
       - key: semanticId
-        value: "0173-1#02-AAO127#003"  # Industrie-Standards
+        value: "0173-1#02-AAO127#003"          # Industrie-Standards
 ```
+
+**Erlaubte `valueType`-Werte** (Enum im Schema, exakte Schreibweise):
+
+`String`, `Boolean`, `Int`, `Int64`, `Double`, `DateTime`, `DateTimeOffset`,
+`TimeSpan`, `Binary`, `BinaryLinked`, `GeospatialPoint`, `Enum`, `Record`,
+`StringArray`, `IntArray`, `RecordArray`.
+
+> Es gibt weder `Integer` noch `Decimal` noch `Guid`. Für Mehrfachwerte
+> existiert kein `isMultiValue`-Flag — stattdessen werden die Array-Varianten
+> (`StringArray`, `IntArray`, `RecordArray`) verwendet.
 
 ### 2.4 Enums
 ```yaml
@@ -102,11 +113,14 @@ $schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
 associationRoles:
   - id: [AssociationName]
     description: "Beziehungsbeschreibung"
-    inboundName: [PluralName]  # z.B. "Tasks"
-    inboundMultiplicity: N/One/ZeroOrOne
-    outboundName: [SingularName]  # z.B. "Project"
-    outboundMultiplicity: N/One/ZeroOrOne
+    inboundName: [PluralName]      # z.B. "Tasks"
+    inboundMultiplicity: N         # erlaubt: One, ZeroOrOne, N
+    outboundName: [SingularName]   # z.B. "Project"
+    outboundMultiplicity: One      # erlaubt: One, ZeroOrOne, N
 ```
+
+> Es gibt nur drei Multiplizitäten: `One`, `ZeroOrOne`, `N`. `Many` und
+> `ZeroOrMany` sind keine gültigen Werte.
 
 ### 2.6 Records (Komplexe Datentypen)
 ```yaml
@@ -115,15 +129,16 @@ records:
   - recordId: [RecordName]
     description: "Record-Beschreibung"
     attributes:
-      - id: ${thisModel}/[AttributeName]
+      - id: ${this}/[AttributeName]
         name: [DisplayName]
-        isOptional: true/false
-      - id: Basic/[BasicAttribute]
+        isOptional: true            # optional, default: false
+      - id: ${Basic}/[BasicAttribute]
         name: [DisplayName]
-      - id: System/KeyValuePair  # Für Dictionary-ähnliche Strukturen
-        name: [Name]
-        isMultiValue: true
 ```
+
+> Für Listen von Records innerhalb eines Records nutzen Sie ein Attribut mit
+> `valueType: RecordArray` und `valueCkRecordId`. Einen `KeyValuePair`-Typ
+> gibt es im System CK Modell nicht.
 
 ## 3. Best Practices
 
@@ -131,22 +146,23 @@ records:
 **Immer prüfen ob Basic-Typen verwendet werden können:**
 
 #### Häufig verwendete Basic-Types:
-- `Basic/NamedEntity` - Für benannte Entitäten (enthält Name + Description)
-- `Basic/Document` - Für Dokumente
-- `Basic/Person` - Für Personen-Entitäten
-- `Basic/Asset` - Für Assets/Ressourcen
+- `${Basic}/NamedEntity` — abstrakt; Name + Description
+- `${Basic}/Document` — abstrakt; Basis für Dokumente (DocumentNumber, DocumentDate)
+- `${Basic}/Employee` — Mitarbeiter (FirstName, LastName, EmployeeId, EmployeeExternalId)
+- `${Basic}/Asset` — Asset/Ressource (leitet von TreeNode ab)
+- `${Basic}/Tree`, `${Basic}/TreeNode` — Hierarchien
 
-#### Häufig verwendete Basic-Attributes:
-- `Basic/From`, `Basic/To` - Für Zeitbereiche
-- `Basic/TimeRange` - Record für Zeitbereiche
-- `Basic/Time` - Einzelne Zeitpunkte
-- `Basic/Comment` - Für Kommentare/Notizen
-- `Basic/Contact` - Kontaktdaten-Record
-- `Basic/Address` - Adress-Record
-- `Basic/File` - Für Dateianhänge
-- `Basic/CompanyName` - Firmennamen
-- `Basic/Email` - E-Mail-Adressen
-- `Basic/Phone` - Telefonnummern
+#### Häufig verwendete Basic-Attributes/Records:
+- `${Basic}/From`, `${Basic}/To` — Start-/Endzeitpunkt (Attribut, DateTime)
+- `${Basic}/TimeRange` — Record bestehend aus From/To
+- `${Basic}/Time` — einzelner Zeitpunkt (Attribut, DateTime)
+- `${Basic}/Comment` — Kommentar/Notiz
+- `${Basic}/Contact` — Kontaktdaten-Record
+- `${Basic}/Address` — Adress-Record
+- `${Basic}/File` — Dateianhang (BinaryLinked)
+- `${Basic}/CompanyName` — Firmenname
+- `${Basic}/EMailAddress` — E-Mail-Adresse (Attribut); Record-Pendant: `${Basic}/EMail`
+- `${Basic}/TelephoneNumber` — Telefonnummer (Attribut); Record-Pendant: `${Basic}/PhoneNumber`
 
 ### 3.2 Namenskonventionen
 
@@ -170,15 +186,15 @@ records:
 ### 3.3 Vererbungshierarchie
 
 ```
-System/Entity (Basis für alle Entities)
-    ├── Basic/NamedEntity (mit Name + Description)
+${System}/Entity (abstrakte Basis aller Entitäten)
+    ├── ${Basic}/NamedEntity (abstrakt; Name + Description)
     │   ├── Project
     │   ├── Task
     │   ├── Sprint
     │   └── Risk
-    ├── Basic/Document
+    ├── ${Basic}/Document (abstrakt; DocumentNumber + DocumentDate)
     │   └── ProjectDocument
-    └── Employee (direkt von System/Entity)
+    └── Employee (eigener Typ direkt von ${System}/Entity)
 ```
 
 ### 3.4 Association-Patterns
@@ -186,8 +202,8 @@ System/Entity (Basis für alle Entities)
 #### One-to-Many (Parent-Child):
 ```yaml
 associations:
-  - id: System/ParentChild
-    targetCkTypeId: ${thisModel}/ParentType
+  - id: ${System}/ParentChild
+    targetCkTypeId: ${this}/ParentType
 ```
 
 #### Many-to-Many:
@@ -202,10 +218,18 @@ associationRoles:
 
 #### Self-Referencing (z.B. Task Dependencies):
 ```yaml
+# associationRoles/TaskDependencies.yaml
+associationRoles:
+  - id: TaskDependencies
+    inboundName: DependsOn
+    inboundMultiplicity: N
+    outboundName: Predecessors
+    outboundMultiplicity: N
+
+# In types/Task.yaml
 associations:
-  - id: ${thisModel}/TaskDependencies
-    targetCkTypeId: ${thisModel}/Task
-    cardinality: ZeroOrMany
+  - id: ${this}/TaskDependencies
+    targetCkTypeId: ${this}/Task
 ```
 
 ### 3.5 AI-Integration
@@ -214,7 +238,7 @@ associations:
 ```yaml
 attributes:
   - id: RiskScore
-    valueType: Decimal
+    valueType: Double
     description: "AI-calculated risk score (0-100)"
     metaData:
       - key: Unit
@@ -223,7 +247,7 @@ attributes:
         value: "0"
       - key: MaxValue
         value: "100"
-      - key: AIGenerated
+      - key: AIGenerated     # Eigene Konvention zur Markierung KI-generierter Felder
         value: "true"
 ```
 
@@ -282,38 +306,44 @@ $schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
 
 ### Fehler 2: Fehlende Basic-Dependencies
 **Problem**: Basic-Attribute verwendet ohne Basic in Dependencies
-**Lösung**: In ckModel.yaml hinzufügen:
+**Lösung**: In ckModel.yaml mit Versionsbereich hinzufügen:
 ```yaml
 dependencies:
-  - Basic
+  - Basic-[2.0,3.0)
 ```
 
 ### Fehler 3: Doppelte Attribute
 **Problem**: Gleiche Attribute in mehreren Types
 **Lösung**: Als gemeinsames Attribut definieren und wiederverwenden
 
-### Fehler 4: Falsche Kardinalitäten
-**Problem**: One statt ZeroOrOne verwendet
-**Lösung**: Immer prüfen ob Beziehung optional sein kann
+### Fehler 4: Falsche Multiplizitäten
+**Problem**: `Many` oder `ZeroOrMany` an einem `associationRole` verwendet
+**Lösung**: Erlaubt sind nur `One`, `ZeroOrOne` und `N`. Innerhalb eines Types
+gibt es kein `cardinality`-Feld – die Multiplizität lebt allein am `associationRole`.
 
 ## 6. Testing und Deployment
 
 ### Lokale Validierung:
 ```bash
-# YAML-Syntax prüfen
+# YAML-Syntax prüfen (optional, generisch)
 yamllint ConstructionKit/
 
-# Schema-Validierung (wenn Tool vorhanden)
-octomesh validate ./ConstructionKit
+# Vollständige Schema-Validierung und Kompilierung erfolgen beim .NET-Build:
+dotnet build -c DebugL
 ```
+
+Beim Build werden alle CK-YAML-Dateien gegen die JSON-Schemas validiert und
+durch den ConstructionKit-Compiler in eine kompilierte CK-Bibliothek
+(`bin/.../octo-ck-libraries/<Project>/out/ck-<name>.yaml`) übersetzt.
 
 ### Deployment:
 ```bash
-# Zu OctoMesh deployen
-octomesh deploy ./ConstructionKit
+# Vorbereitung: Kontext und Login
+octo-cli -c UseContext -n <name>
+octo-cli -c LogIn -i
 
-# Status prüfen
-octomesh status ProjectManagement
+# Kompilierte CK-YAML in den aktuellen Tenant importieren (mit -w warten)
+octo-cli -c ImportCk -f ./bin/DebugL/net10.0/octo-ck-libraries/<Project>/out/ck-<name>.yaml -w
 ```
 
 ## 7. Beispiel-Implementierung
@@ -330,7 +360,7 @@ Pfad: `/demo-process-automation/src/ProcessAutomationDemo/ConstructionKit/`
 
 ## 8. Weiterführende Ressourcen
 
-- OctoMesh Dokumentation: https://docs.meshmakers.io
+- OctoMesh Dokumentation: https://docs.meshmakers.cloud
 - Schema-Definitionen: https://schemas.meshmakers.cloud/
 - Basic ConstructionKit: `/octo-construction-kit/src/ConstructionKits/Octo.Sdk.Packages.Basic/`
 - Energy Community Beispiel: `/octo-construction-kit/src/ConstructionKits/Octo.Sdk.Packages.EnergyCommunity/`

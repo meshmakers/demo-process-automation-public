@@ -1,0 +1,157 @@
+$schema: https://schemas.meshmakers.cloud/runtime-model.schema.json
+dependencies:
+  - System.Communication-[3.0,4.0)
+entities:
+  - rtId: 69e7e1000000000000000030
+    ckTypeId: System.Communication/DataFlow
+    associations: []
+    attributes:
+      - id: System/Name
+        value: detect_anomalies_interval_spike_estimation
+      - id: System/Description
+        value: >
+          Detects invoice-cadence anomalies via ML.NET spike detection on
+          days-since-last computed in-pipeline from each invoice's
+          chronologically-prior sibling.
+  - rtId: 69e7e1000000000000000031
+    ckTypeId: System.Communication/Pipeline
+    associations:
+      - roleId: System/ParentChild
+        targetRtId: 69e7e1000000000000000030
+        targetCkTypeId: System.Communication/DataFlow
+      - roleId: System.Communication/Executes
+        targetRtId: 67e10c0bfe3e19891bbfd261
+        targetCkTypeId: System.Communication/Adapter
+    attributes:
+      - id: System/Name
+        value: detect_anomalies_interval_spike_estimation_pipeline
+      - id: System/Description
+        value: >
+          For each invoice, looks up its chronologically-prior sibling from the
+          same issuer at runtime, computes days-since-last, and runs ML.NET IID
+          spike detection over the resulting series. Distributional outliers in
+          the cadence are flagged DocumentState=REVIEW. Upload order does not
+          matter (queries DB state each execution).
+      - id: System/Enabled
+        value: true
+      - id: System.Communication/PipelineDefinition
+        value: |-
+          triggers:
+            - type: FromExecutePipelineCommand@1
+              description: Manual trigger — invoked via `octo-cli -c ExecutePipeline -id <this pipeline's RtId>` or from Refinery Studio
+          transformations:
+            - type: GetRtEntitiesByType@1
+              description: >
+                Load up to 100 AccountingDocument entities. Sorted DESCENDING
+                because ForEach's ConcurrentBag output is LIFO — a DESC input
+                lands in $.enriched as ASC chronology, which is what the
+                detector needs to see.
+              ckTypeId: AccountingDemo/AccountingDocument
+              skip: 0
+              take: 100
+              targetPath: $.documents
+              sortOrders:
+                - attributeName: DocumentDate
+                  sortOrder: Descending
+
+            - type: ForEach@1
+              description: >
+                Per invoice: look up the chronologically-prior invoice from the
+                same issuer, compute the gap (days), and stash it on
+                $.key.Attributes.DaysSinceLast. MDOP=1 keeps ordering
+                deterministic. Emits the mutated $.key to $.enriched.
+              iterationPath: $.documents.Items
+              mergePath: $.key
+              targetPath: $.enriched
+              maxDegreeOfParallelism: 1
+              transformations:
+                - type: GetRtEntitiesByType@1
+                  description: >
+                    Find the single most recent AccountingDocument that
+                    predates this one (same issuer, DocumentDate <
+                    $.key.Attributes.DocumentDate). Returns 0 rows if this is
+                    the first invoice from the issuer.
+                  ckTypeId: AccountingDemo/AccountingDocument
+                  skip: 0
+                  take: 1
+                  targetPath: $.previous
+                  fieldFilters:
+                    - attributePath: Issuer.CompanyName
+                      operator: Equals
+                      comparisonValuePath: $.key.Attributes.Issuer.Attributes.CompanyName
+                    - attributePath: DocumentDate
+                      operator: LessThan
+                      comparisonValuePath: $.key.Attributes.DocumentDate
+                  sortOrders:
+                    - attributeName: DocumentDate
+                      sortOrder: Descending
+                - type: If@1
+                  description: >
+                    Skip if no prior invoice exists (first-per-issuer) — their
+                    DaysSinceLast is undefined and the detector would reject a
+                    null value.
+                  path: $.previous.TotalCount
+                  operator: GreaterThan
+                  value: 0
+                  valueType: Int
+                  transformations:
+                    - type: DateTime@1
+                      description: >
+                        Compute the gap in days between the prior invoice's
+                        DocumentDate and this one's; stash it as an in-memory
+                        attribute on the current invoice ($.key).
+                      operation: DaysBetween
+                      path: $.previous.Items[0].Attributes.DocumentDate
+                      valuePath: $.key.Attributes.DocumentDate
+                      targetPath: $.key.Attributes.DaysSinceLast
+
+            - type: MachineLearningAnomalyDetection@1
+              description: >
+                ML.NET IID spike detector on DaysSinceLast, grouped per issuer.
+                The JSONPath filter [?(@.Attributes.DaysSinceLast)] excludes
+                the first-per-issuer rows that have no computed delta.
+              path: $.enriched[?(@.Attributes.DaysSinceLast)]
+              targetPath: $.anomalies
+              resetStatistics: true
+              detectors:
+                - path: $.Attributes.DaysSinceLast
+                  groupByPath: $.Attributes.Issuer.Attributes.CompanyName
+                  contextPath: $
+                  detectSpikes: true
+                  detectChangePoints: false
+                  minDataPoints: 3
+                  pValueHistoryLength: 3
+
+            - type: ForEach@1
+              description: For each detected anomaly, format the reason and build an UPDATE action that flags the invoice as REVIEW
+              iterationPath: $.anomalies
+              mergePath: $.updates
+              targetPath: $.updates
+              transformations:
+                - type: FormatString@1
+                  description: Build a human-readable reason like "Invoice cadence is out of range with level 1, score 1, pValue 1E-08" from the detector's metrics
+                  targetPath: $.key.reason
+                  format: "Invoice cadence is out of range with level {$.key.level}, score {$.key.score}, pValue {$.key.pValue}"
+                - type: CreateUpdateInfo@1
+                  description: Queue an UPDATE for the flagged AccountingDocument — set DocumentState=REVIEW, copy the formatted reason into Comment
+                  targetPath: $.updates._items
+                  targetValueKind: Array
+                  updateKind: UPDATE
+                  ckTypeId: AccountingDemo/AccountingDocument
+                  rtIdPath: $.key.context.RtId
+                  attributeUpdates:
+                    - attributeName: DocumentState
+                      attributeValueType: Enum
+                      value: REVIEW
+                    - attributeName: Comment
+                      attributeValueType: String
+                      valuePath: $.key.reason
+            - type: Flatten@1
+              description: Flatten per-anomaly update arrays into one flat $._result._items list that ApplyChanges can consume in one shot
+              path: $.updates[*]._items[*]
+              targetPath: $._result._items
+              targetValueKind: Simple
+              targetValueWriteMode: Overwrite
+            - type: ApplyChanges@2
+              description: Commit all queued UPDATEs in a single transaction
+              entityUpdatesPath: $._result._items

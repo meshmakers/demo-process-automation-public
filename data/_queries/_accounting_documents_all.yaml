@@ -1,39 +1,38 @@
 $schema: https://schemas.meshmakers.cloud/runtime-model.schema.json
-dependencies: []
+dependencies:
+  - System-[2.0,3.0)
 entities:
-- rtId: 68e296bc1f73f259bbb10399
-  rtCreationDateTime: 2025-10-05T16:03:08.6190000Z
-  rtChangedDateTime: 2025-10-05T16:03:08.6190000Z
-  ckTypeId: System-1.0.0/Query-1.0.0
-  associations: []
-  attributes:
-  - id: System-1.0.0/Query.CkTypeId-1.0.0
-    value: AccountingDemo/AccountingDocument
-  - id: System-1.0.0/Query.Types-1.0.0
-    value: 0
-  - id: System-1.0.0/Query.Columns-1.0.0
-    value:
-    - issuer.companyName
-    - documentDate
-    - documentNumber
-    - documentState
-    - grossTotal
-    - comment
-  - id: System-1.0.0/Query.Sorting-1.0.0
-    value:
-    - ckRecordId: System-1.0.0/SortOrderItem-1.0.0
-      attributes:
-      - id: System-1.0.0/AttributePath-1.0.0
-        value: issuer.companyName
-      - id: System-1.0.0/SortOrder-1.0.0
-        value: 1
-    - ckRecordId: System-1.0.0/SortOrderItem-1.0.0
-      attributes:
-      - id: System-1.0.0/AttributePath-1.0.0
-        value: documentDate
-      - id: System-1.0.0/SortOrder-1.0.0
-        value: 1
-  - id: System-1.0.0/Query.FieldFilter-1.0.0
-    value: []
-  - id: System-1.0.0/Name-1.0.0
-    value: _accounting_documents_all
+  - rtId: 68e296bc1f73f259bbb10399
+    rtCreationDateTime: 2025-10-05T16:03:08.6190000Z
+    rtChangedDateTime: 2025-10-05T16:03:08.6190000Z
+    ckTypeId: System/SimpleRtQuery
+    associations: []
+    attributes:
+      - id: System/Name
+        value: _accounting_documents_all
+      - id: System/Query.CkTypeId
+        value: AccountingDemo/AccountingDocument
+      - id: System/Query.Columns
+        value:
+          - issuer.companyName
+          - documentDate
+          - documentNumber
+          - documentState
+          - grossTotal
+          - comment
+      - id: System/Query.Sorting
+        value:
+          - ckRecordId: System/SortOrderItem
+            attributes:
+              - id: System/AttributePath
+                value: issuer.companyName
+              - id: System/SortOrder
+                value: 1
+          - ckRecordId: System/SortOrderItem
+            attributes:
+              - id: System/AttributePath
+                value: documentDate
+              - id: System/SortOrder
+                value: 1
+      - id: System/Query.FieldFilter
+        value: []

@@ -1,12 +1,14 @@
 #!/usr/bin/env pwsh
 param(
     [string]$tenant = "processautomationdemo",
-    
+
     [string]$BaseUrl = "https://localhost:5001",
-    
+
     [string]$AuthToken,
-    
-    [int]$BatchSize = 50
+
+    [int]$BatchSize = 50,
+
+    [switch]$Force
 )
 
 # Construct GraphQL endpoint
@@ -83,11 +85,13 @@ try {
     
     Write-Host "`nTotal: $($entitiesToDelete.Count) entities to delete" -ForegroundColor Yellow
     
-    # Confirmation
-    $confirmation = Read-Host "Really delete all $($entitiesToDelete.Count) entities? (y/n)"
-    if ($confirmation -ne 'y') {
-        Write-Host "Aborted." -ForegroundColor Red
-        exit 0
+    # Confirmation (skipped when -Force is given, e.g. from automation)
+    if (-not $Force) {
+        $confirmation = Read-Host "Really delete all $($entitiesToDelete.Count) entities? (y/n)"
+        if ($confirmation -ne 'y') {
+            Write-Host "Aborted." -ForegroundColor Red
+            exit 0
+        }
     }
     
     # Delete in batches

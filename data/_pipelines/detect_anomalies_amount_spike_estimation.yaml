@@ -1,32 +1,98 @@
 $schema: https://schemas.meshmakers.cloud/runtime-model.schema.json
-dependencies: []
+dependencies:
+  - System.Communication-[3.0,4.0)
 entities:
-- rtId: 68e26ef7cd702ddd247d4ebd
-  rtCreationDateTime: 2025-10-05T13:13:27.7590000Z
-  rtChangedDateTime: 2025-10-06T06:42:48.6180000Z
-  ckTypeId: System.Communication-1.0.0/MeshPipeline-1.0.0
-  associations:
-  - roleId: System-1.0.0/ParentChild-1.0.0
-    targetRtId: 68e26edecd702ddd247d4ebc
-    targetCkTypeId: System.Communication-1.0.0/DataPipeline-1.0.0
-    attributes: []
-  attributes:
-  - id: System.Communication-1.0.0/DeploymentState-1.0.0
-    value: 0
-  - id: System-1.0.0/Name-1.0.0
-    value: Mesh Pipeline
-  - id: System.Communication-1.0.0/StatusMessage-1.0.0
-  - id: System-1.0.0/Enabled-1.0.0
-    value: true
-  - id: System.Communication-1.0.0/PipelineDefinition-1.0.0
-    value: "triggers:\n  - type: FromExecutePipelineCommand@1 \ntransformations:\n  - type: GetRtEntitiesByType@1\n    description: Getting accounting documents\n    ckTypeId: AccountingDemo/AccountingDocument\n    skip: 0 # Number of entities to skip\n    take: 100 # Number of entities to extract\n    targetPath: $.documents\n  - type: MachineLearningAnomalyDetection@1\n    description: Calculating anomaly scores  \n    path: $.documents.Items[*]\n    targetPath: $.anomalies\n    resetStatistics: true # We calculate for each run. When false statistics are cached.\n    detectors:\n      - path: $.Attributes.GrossTotal\n        groupByPath: $.Attributes.Issuer.Attributes.CompanyName\n        contextPath: $\n        detectSpikes: true\n        detectChangePoints: false\n        minDataPoints: 3 # We lower the amount of minimal data points to start calc for demo\n        pValueHistoryLength: 3\n  - type: ForEach@1\n    description: iterate anomaly detections\n    iterationPath: $.anomalies\n    mergePath: $.updates\n    targetPath: $.updates\n    transformations:\n      - type: FormatString@1\n        targetPath: $.key.reason  # Path where the formatted string will be stored\n        format: \"Invoice amounts are out of range with level {$.key.level}, score {$.key.score}, pValue {$.key.pValue}\"  # Format string with placeholders\n      - type: CreateUpdateInfo@1\n        targetPath: $.updates._items\n        targetValueKind: Array\n        updateKind: UPDATE\n        ckTypeId: AccountingDemo/AccountingDocument\n        rtIdPath: $.key.context.RtId\n        attributeUpdates:\n          - attributeName: DocumentState\n            attributeValueType: Enum\n            value: REVIEW\n          - attributeName: Comment\n            attributeValueType: String\n            valuePath: $.key.reason            \n  - type: Flatten@1\n    path: $.updates[*]._items[*]\n    targetPath: $._result._items\n    targetValueKind: Simple\n    targetValueWriteMode: Overwrite\n  - type: Project@1\n    fields:\n      - path: \"$.updates\"\n  - type: ApplyChanges@2 # we update here item-by-item\n    entityUpdatesPath: $._result._items          \n\n        "
-- rtId: 68e26edecd702ddd247d4ebc
-  rtCreationDateTime: 2025-10-05T13:13:02.0270000Z
-  rtChangedDateTime: 2025-10-06T06:55:03.9750000Z
-  ckTypeId: System.Communication-1.0.0/DataPipeline-1.0.0
-  associations: []
-  attributes:
-  - id: System-1.0.0/Name-1.0.0
-    value: detect_anomalies_amount_spike_estimation
-  - id: System-1.0.0/Description-1.0.0
-    value: Detects anomalies of Accounting Document grossTotals using Spike detection of MachineLearningAnomalyDetection node
+  - rtId: 68e26edecd702ddd247d4ebc
+    rtCreationDateTime: 2025-10-05T13:13:02.0270000Z
+    rtChangedDateTime: 2025-10-06T06:55:03.9750000Z
+    ckTypeId: System.Communication/DataFlow
+    associations: []
+    attributes:
+      - id: System/Name
+        value: detect_anomalies_amount_spike_estimation
+      - id: System/Description
+        value: Detects anomalies of Accounting Document grossTotals using Spike detection of MachineLearningAnomalyDetection node
+  - rtId: 68e26ef7cd702ddd247d4ebd
+    rtCreationDateTime: 2025-10-05T13:13:27.7590000Z
+    rtChangedDateTime: 2025-10-06T06:42:48.6180000Z
+    ckTypeId: System.Communication/Pipeline
+    associations:
+      - roleId: System/ParentChild
+        targetRtId: 68e26edecd702ddd247d4ebc
+        targetCkTypeId: System.Communication/DataFlow
+      - roleId: System.Communication/Executes
+        targetRtId: 67e10c0bfe3e19891bbfd261
+        targetCkTypeId: System.Communication/Adapter
+    attributes:
+      - id: System/Name
+        value: detect_anomalies_amount_spike_estimation_pipeline
+      - id: System/Description
+        value: >
+          Runs an ML.NET IID spike detector over every AccountingDocument's
+          GrossTotal, grouped by issuer. Distributional outliers are flagged
+          DocumentState=REVIEW with the detector's level/score/pValue in
+          Comment.
+      - id: System/Enabled
+        value: true
+      - id: System.Communication/PipelineDefinition
+        value: |-
+          triggers:
+            - type: FromExecutePipelineCommand@1
+              description: Manual trigger — invoked via `octo-cli -c ExecutePipeline -id <this pipeline's RtId>` or from Refinery Studio
+          transformations:
+            - type: GetRtEntitiesByType@1
+              description: Load up to 100 AccountingDocument entities (all invoices in the tenant) into $.documents
+              ckTypeId: AccountingDemo/AccountingDocument
+              skip: 0
+              take: 100
+              targetPath: $.documents
+            - type: MachineLearningAnomalyDetection@1
+              description: ML.NET IID spike detection on GrossTotal, grouped per issuer; writes matches into $.anomalies
+              path: $.documents.Items[*]
+              targetPath: $.anomalies
+              resetStatistics: true
+              detectors:
+                - path: $.Attributes.GrossTotal
+                  groupByPath: $.Attributes.Issuer.Attributes.CompanyName
+                  contextPath: $
+                  detectSpikes: true
+                  detectChangePoints: false
+                  minDataPoints: 3
+                  pValueHistoryLength: 3
+            - type: ForEach@1
+              description: For each detected anomaly, format the reason and build an UPDATE action that flags the invoice as REVIEW
+              iterationPath: $.anomalies
+              mergePath: $.updates
+              targetPath: $.updates
+              transformations:
+                - type: FormatString@1
+                  description: Build a human-readable reason like "Invoice amounts are out of range with level 1, score 2880, pValue 1E-08" from the detector's metrics
+                  targetPath: $.key.reason
+                  format: "Invoice amounts are out of range with level {$.key.level}, score {$.key.score}, pValue {$.key.pValue}"
+                - type: CreateUpdateInfo@1
+                  description: Queue an UPDATE for the flagged AccountingDocument — set DocumentState=REVIEW, copy the formatted reason into Comment
+                  targetPath: $.updates._items
+                  targetValueKind: Array
+                  updateKind: UPDATE
+                  ckTypeId: AccountingDemo/AccountingDocument
+                  rtIdPath: $.key.context.RtId
+                  attributeUpdates:
+                    - attributeName: DocumentState
+                      attributeValueType: Enum
+                      value: REVIEW
+                    - attributeName: Comment
+                      attributeValueType: String
+                      valuePath: $.key.reason
+            - type: Flatten@1
+              description: Flatten per-anomaly update arrays into one flat $._result._items list that ApplyChanges can consume in one shot
+              path: $.updates[*]._items[*]
+              targetPath: $._result._items
+              targetValueKind: Simple
+              targetValueWriteMode: Overwrite
+            - type: Project@1
+              description: Drop the $.updates scratch area from the context (internal-only)
+              fields:
+                - path: "$.updates"
+            - type: ApplyChanges@2
+              description: Commit all queued UPDATEs in a single transaction
+              entityUpdatesPath: $._result._items

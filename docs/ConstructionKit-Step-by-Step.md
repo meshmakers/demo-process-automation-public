@@ -15,17 +15,19 @@ Dieser Guide dokumentiert den exakten Prozess zur Erstellung eines OctoMesh Cons
 #### 1.1 Basic ConstructionKit analysieren
 ```bash
 # Struktur verstehen
-ls /octo-construction-kit/src/ConstructionKits/Octo.Sdk.Packages.Basic/ConstructionKit/
+ls octo-construction-kit/src/ConstructionKits/Octo.Sdk.Packages.Basic/ConstructionKit/
 
 # Wichtige Basic-Types identifizieren
-cat types/NamedEntity.yaml  # Basis für benannte Entitäten
-cat types/Document.yaml     # Basis für Dokumente
-cat types/Person.yaml       # Falls vorhanden
+cat types/NamedEntity.yaml  # abstrakte Basis für benannte Entitäten
+cat types/Document.yaml     # abstrakte Basis für Dokumente
+cat types/Employee.yaml     # Mitarbeiter mit FirstName/LastName/EmployeeId
 
-# Wiederverwendbare Attribute finden
+# Wiederverwendbare Attribute und Records finden
 cat attributes/Basics.yaml
 cat attributes/Contact.yaml
-cat attributes/TimeRange.yaml
+cat records/TimeRange.yaml
+cat records/Address.yaml
+cat records/Contact.yaml
 ```
 
 #### 1.2 Domänen-Analyse
@@ -45,11 +47,15 @@ mkdir -p ConstructionKit/{types,attributes,enums,associations,records}
 #### 2.2 Model-Definition (ckModel.yaml)
 ```yaml
 $schema: https://schemas.meshmakers.cloud/construction-kit-meta.schema.json
-modelId: ProjectManagement  # Ihr Model-Name
+modelId: ProjectManagement-1.0.0   # modelId enthält die Modellversion
 dependencies:
-  - Basic    # Fast immer benötigt
-  - System   # Für System/Entity
+  - Basic-[2.0,3.0)                # Basic zieht System transitiv mit
 ```
+
+**Wichtig**:
+- `modelId` schließt per Konvention die Version mit ein (`Name-Major.Minor.Patch`).
+- Abhängigkeiten verwenden NuGet-Versionsbereiche (z.B. `[2.0,3.0)` = ab 2.0, kleiner als 3.0).
+- `System` muss nicht explizit angegeben werden, wenn `Basic` referenziert ist.
 
 ### Phase 3: Enumerations definieren
 
@@ -89,7 +95,7 @@ Attribute in logische Gruppen aufteilen:
 $schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
 attributes:
   - id: Budget
-    valueType: Decimal
+    valueType: Double                # numerische Geldbeträge
     description: "Total project budget"
     metaData:
       - key: Unit
@@ -102,18 +108,19 @@ attributes:
 - Einheiten für numerische Werte angeben
 - Min/Max-Werte wo sinnvoll
 - Default-Werte für Enums
+- Es gibt keinen `Decimal`- oder `Integer`-Typ — verwenden Sie `Double` bzw. `Int`/`Int64`.
 
 ### Phase 5: Types (Entitäten) definieren
 
 #### 5.1 Vererbungshierarchie planen
 ```
-Basic/NamedEntity (hat Name + Description)
+${Basic}/NamedEntity (hat Name + Description)
   ├── Project
   ├── Task
   └── Sprint
 
-System/Entity (Basis)
-  ├── Employee (nutzt Basic/Contact als Attribut)
+${System}/Entity (Basis)
+  ├── Employee (eigener Typ; nutzt z.B. ${Basic}/Contact als Record-Attribut)
   └── Client
 ```
 
@@ -123,32 +130,33 @@ Datei: `types/Project.yaml`
 $schema: https://schemas.meshmakers.cloud/construction-kit-elements.schema.json
 types:
   - typeId: Project
-    derivedFromCkTypeId: Basic/NamedEntity  # Erbt Name + Description
+    derivedFromCkTypeId: ${Basic}/NamedEntity   # Erbt Name + Description
     description: "Represents a project in the system"
     attributes:
-      - id: ${thisModel}/ProjectCode
+      - id: ${this}/ProjectCode
         name: ProjectCode
-        autoIncrementReference: "ProjectCode"  # Auto-ID
-      - id: Basic/From  # Wiederverwendung!
+        autoIncrementReference: "ProjectCode"   # Auto-ID
+      - id: ${Basic}/From                       # Wiederverwendung!
         name: StartDate
-      - id: Basic/To
+      - id: ${Basic}/To
         name: Deadline
-      - id: ${thisModel}/Budget
+      - id: ${this}/Budget
         name: Budget
       # KI-Felder
-      - id: ${thisModel}/RiskScore
+      - id: ${this}/RiskScore
         name: RiskScore
         isOptional: true
     associations:
-      - id: ${thisModel}/ProjectTasks
-        targetCkTypeId: ${thisModel}/Task
+      - id: ${this}/ProjectTasks
+        targetCkTypeId: ${this}/Task
       # weitere...
 ```
 
 **Wichtige Patterns**:
-- `${thisModel}/` für eigene Attribute
-- `Basic/` für Basic-Attribute
-- `System/` für System-Features
+- `${this}/` für Bezüge auf das eigene Modell
+- `${Basic}/` für Basic-Attribute, -Records und -Types
+- `${System}/` für System-Attribute, -Types und vordefinierte Association Roles
+  (z.B. `${System}/ParentChild`, `${System}/Related`)
 
 ### Phase 6: Associations definieren
 
@@ -169,14 +177,18 @@ associationRoles:
 ```yaml
 # In Project.yaml
 associations:
-  - id: ${thisModel}/ProjectTasks
-    targetCkTypeId: ${thisModel}/Task
-    
-# In Task.yaml  
+  - id: ${this}/ProjectTasks
+    targetCkTypeId: ${this}/Task
+
+# In Task.yaml
 associations:
-  - id: System/ParentChild  # Vordefinierte Parent-Child
-    targetCkTypeId: ${thisModel}/Project
+  - id: ${System}/ParentChild   # Vordefinierte Parent-Child Beziehung
+    targetCkTypeId: ${this}/Project
 ```
+
+> Die Multiplizität (1:N etc.) wird ausschließlich am `associationRole` definiert.
+> Innerhalb eines Types gibt es kein `cardinality`-Feld – die Beziehung wird nur
+> via `id` und `targetCkTypeId` an die Rolle gebunden.
 
 ### Phase 7: Records (Komplexe Typen)
 
@@ -188,11 +200,11 @@ records:
   - recordId: SkillRecord
     description: "Record type for skill assessment"
     attributes:
-      - id: ${thisModel}/SkillName
+      - id: ${this}/SkillName
         name: SkillName
-      - id: ${thisModel}/SkillLevel
+      - id: ${this}/SkillLevel
         name: Level
-      - id: Basic/Time  # Basic verwenden!
+      - id: ${Basic}/Time          # Basic-Attribut wiederverwenden
         name: LastUsed
 ```
 
@@ -203,16 +215,17 @@ Vor der Erstellung eigener Attribute prüfen:
 
 **Zeitangaben**:
 - ❌ NICHT: `StartDate: DateTime`
-- ✅ BESSER: `Basic/From` und `Basic/To`
-- ✅ ODER: `Basic/TimeRange` (Record)
+- ✅ BESSER: `${Basic}/From` und `${Basic}/To`
+- ✅ ODER: `${Basic}/TimeRange` (Record)
 
 **Kontaktdaten**:
 - ❌ NICHT: Eigene FirstName, LastName, Email
-- ✅ BESSER: `Basic/Contact` (Record mit allem)
+- ✅ BESSER: `${Basic}/Contact` (Record mit allem)
+  oder `${Basic}/EMailAddress`, `${Basic}/TelephoneNumber` als Einzelattribute
 
 **Allgemeine Felder**:
 - ❌ NICHT: `Notes: String`
-- ✅ BESSER: `Basic/Comment`
+- ✅ BESSER: `${Basic}/Comment`
 
 ### Phase 9: KI-Integration
 
@@ -220,16 +233,20 @@ Vor der Erstellung eigener Attribute prüfen:
 ```yaml
 attributes:
   - id: RiskScore
-    valueType: Decimal
+    valueType: Double
     description: "AI-calculated risk score (0-100)"
     metaData:
       - key: Unit
         value: "%"
-      - key: AIGenerated  # Markierung!
+      - key: AIGenerated  # Eigene Konvention zur Markierung
         value: "true"
       - key: UpdateFrequency
         value: "hourly"
 ```
+
+> `AIGenerated` und `UpdateFrequency` sind keine vom Schema erzwungenen Keys –
+> sie sind Konventionen dieses Construction Kits, die KI-Agenten und UIs
+> auswerten können.
 
 #### 9.2 AI-Agent Ordner
 ```bash
@@ -277,36 +294,45 @@ Inhalt:
 **Ursache**: A → B → A Beziehung
 **Lösung**: Eine Richtung als Association, andere über API
 
-### Problem 3: "Invalid cardinality"
-**Ursache**: `cardinality: N` statt `cardinality: Many`
-**Lösung**: 
-- In types: One/ZeroOrOne/ZeroOrMany/Many
-- In associationRoles: N/One/ZeroOrOne
+### Problem 3: "Invalid multiplicity"
+**Ursache**: Verwendung von `Many` oder `ZeroOrMany`
+**Lösung**: Multiplizitäten existieren nur an `associationRoles` und sind
+auf `One`, `ZeroOrOne` und `N` beschränkt. An einer Association innerhalb
+eines Types gibt es kein `cardinality`-Feld.
 
 ### Problem 4: "Missing dependency"
 **Ursache**: Basic-Attribute verwendet ohne Basic in Dependencies
-**Lösung**: In ckModel.yaml ergänzen:
+**Lösung**: In ckModel.yaml ergänzen (mit Versionsbereich):
 ```yaml
 dependencies:
-  - Basic
+  - Basic-[2.0,3.0)
 ```
 
 ## Deployment
 
 ### Lokal testen:
 ```bash
-# YAML-Syntax
+# YAML-Syntax (optional)
 yamllint ConstructionKit/
 
-# Wenn OctoMesh CLI vorhanden:
-octomesh validate ./ConstructionKit
+# Schema-Validierung und Kompilierung erfolgen beim .NET-Build:
+dotnet build -c DebugL
 ```
+
+Beim Build werden YAML-Dateien gegen die JSON-Schemas validiert und durch
+den ConstructionKit-Compiler in eine kompilierte CK-Bibliothek
+(`bin/.../octo-ck-libraries/.../out/ck-<name>.yaml`) übersetzt.
 
 ### Deploy zu OctoMesh:
 ```bash
-octomesh deploy ./ConstructionKit
-octomesh status ProjectManagement
+# Kompilierte CK-YAML-Datei in den aktuellen Tenant importieren
+octo-cli -c ImportCk -f ./bin/DebugL/net10.0/octo-ck-libraries/<Project>/out/ck-<name>.yaml -w
 ```
+
+Mit `-w` wartet die CLI bis der Hangfire-Job abgeschlossen ist und meldet
+Erfolg oder Fehler. Vorher muss der Tenant-Kontext eingerichtet sein
+(`octo-cli -c UseContext -n <name>`) und ein gültiges Token vorliegen
+(`octo-cli -c LogIn -i`).
 
 ## Zusammenfassung
 

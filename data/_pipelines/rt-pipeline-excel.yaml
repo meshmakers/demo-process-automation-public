@@ -1,35 +1,45 @@
 $schema: https://schemas.meshmakers.cloud/runtime-model.schema.json
-dependencies: []
+dependencies:
+  - System.Communication-[3.0,4.0)
 entities:
+  - rtId: 67e10c68fe3e19891bbfd262
+    rtCreationDateTime: 2025-03-24T07:40:24.7380000Z
+    rtChangedDateTime: 2025-03-24T07:40:24.7380000Z
+    ckTypeId: System.Communication/DataFlow
+    associations: []
+    attributes:
+      - id: System/Name
+        value: Excel Pipeline
+      - id: System/Description
+        value: Accepts an Excel workbook via HTTP POST and imports it as a tree of runtime entities.
   - rtId: 67e10c68fe3e19891bbfd263
     rtCreationDateTime: 2025-03-24T07:40:25.1570000Z
     rtChangedDateTime: 2025-03-24T11:31:36.9330000Z
-    ckTypeId: System.Communication-1.0.0/MeshPipeline-1.0.0
+    ckTypeId: System.Communication/Pipeline
     associations:
-      - roleId: System-1.0.0/ParentChild-1.0.0
+      - roleId: System/ParentChild
         targetRtId: 67e10c68fe3e19891bbfd262
-        targetCkTypeId: System.Communication-1.0.0/DataPipeline-1.0.0
-        attributes: []
+        targetCkTypeId: System.Communication/DataFlow
+      - roleId: System.Communication/Executes
+        targetRtId: 67e10c0bfe3e19891bbfd261
+        targetCkTypeId: System.Communication/Adapter
     attributes:
-      - id: System-1.0.0/Name-1.0.0
-        value: Mesh Pipeline
-      - id: System-1.0.0/Enabled-1.0.0
+      - id: System/Name
+        value: excel_pipeline
+      - id: System/Description
+        value: >
+          Minimal Excel import: accepts a workbook on POST /import/tree and
+          hands it to the ImportFromExcel node, which maps rows to runtime
+          entities according to the workbook's configured tree structure.
+      - id: System/Enabled
         value: true
-      - id: System.Communication-1.0.0/PipelineDefinition-1.0.0
-        value: >-
+      - id: System.Communication/PipelineDefinition
+        value: |-
           triggers:
             - type: FromHttpRequest@1
+              description: POST /import/tree — entry point for Excel imports
               path: /import/tree
               method: POST
           transformations:
             - type: ImportFromExcel@1
-      - id: System.Communication-1.0.0/StatusMessage-1.0.0
-  - rtId: 67e10c68fe3e19891bbfd262
-    rtCreationDateTime: 2025-03-24T07:40:24.7380000Z
-    rtChangedDateTime: 2025-03-24T07:40:24.7380000Z
-    ckTypeId: System.Communication-1.0.0/DataPipeline-1.0.0
-    associations: []
-    attributes:
-      - id: System-1.0.0/Name-1.0.0
-        value: Excel Pipeline
-      - id: System-1.0.0/Description-1.0.0
+              description: Parse the uploaded Excel workbook and import each row as a runtime entity following the workbook's tree layout

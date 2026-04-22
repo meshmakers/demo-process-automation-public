@@ -17,7 +17,16 @@ This demo showcases a complete process automation solution built on the OctoMesh
 
 - OctoMesh CLI (`octo-cli`) installed and configured
 - PowerShell Core
-- .NET 9.0 SDK (for building the construction kit)
+- .NET 10.0 SDK (for building the construction kit)
+- An existing `local_octosystem` CLI context that is logged in. The create/delete
+  scripts run from that stable system-tenant context so the auth token survives
+  the tenant lifecycle. Register it once with `octo-cli -c AddContext` +
+  `octo-cli -c LogIn -i`.
+- A running `octo-mesh-adapter` process (this demo uses its HTTP endpoints on
+  port 5020). The adapter registers with the Communication Controller at
+  startup; restart it after recreating the tenant.
+- Build the construction kit before importing it:
+  `dotnet build src/ProcessAutomationDemo -c DebugL`
 
 ### 1. Create Tenant
 
@@ -26,20 +35,34 @@ cd scripts
 .\om_create_tenants.ps1
 ```
 
-This creates a new tenant named `processautomationdemo` with communication and reporting enabled.
+This creates a new tenant named `processautomationdemo`, auto-provisions the
+current system user as its admin, registers a `local_processautomationdemo`
+CLI context, and switches the active context to it.
 
-### 2. Import Construction Kit Models
+### 2. Log in to the new tenant (interactive)
+
+```powershell
+octo-cli -c LogIn -i
+```
+
+Required: the fresh context has no tokens yet. Until this step succeeds every
+tenant-scoped command (`EnableCommunication`, `ImportCk`, `ImportRt`,
+`DeployDataFlow`) will fail on auth refresh.
+
+### 3. Import Construction Kit Models
 
 ```powershell
 .\om_importck.ps1
 ```
 
-Import the basic construction kit and the custom accounting demo model including:
-- Basic types and attributes
+Imports the custom accounting demo model and automatically pulls the `Basic` construction kit from the public GitHub catalog:
+- `Basic` construction kit (pulled via `ImportFromCatalog` from `PublicGitHubCatalog`)
 - Accounting document entities
 - AI-enabled analysis fields
 
-### 3. Import Runtime Data
+No bundled Basic CK is shipped — any recent OctoMesh installation with public-catalog access will resolve it on import.
+
+### 4. Import Runtime Data
 
 ```powershell
 .\om_importrt.ps1
@@ -50,6 +73,23 @@ Loads sample data including:
 - Anomaly detection algorithms
 - Pre-configured queries
 - Mesh adapters
+
+The script imports with `-r` (Upsert), so re-running it against an existing
+tenant is safe.
+
+### 5. Deploy DataFlows to the mesh adapter
+
+```powershell
+.\om_deploy_dataflows.ps1
+```
+
+Walks every DataFlow defined in `data/_pipelines/*.yaml` and calls
+`octo-cli -c DeployDataFlow -id <rtId>` for each. The HTTP-triggered pipelines
+(v1/v2/v3 upload endpoints, excel) only answer on port 5020 after this step —
+import alone is not enough.
+
+Run this again after `om_update_2_anomaly.ps1` or whenever you add a new
+pipeline YAML.
 
 ## Components
 
@@ -68,14 +108,15 @@ The accounting demo construction kit includes:
 | `upload_accounting_document_v1`            | Initial version document upload                            |
 | `upload_accounting_document_v2`            | Enhanced document upload with metadata extraction          |
 | `upload_accounting_document_v3`            | Enhanced document upload with complete metadata extraction |
-| `detect_anomalies_amount_percent_change`   | Percentage-based anomaly detection                         |
-| `detect_anomalies_amount_spike_estimation` | Statistical spike detection                                |
+| `detect_anomalies_amount_percent_change`     | Percent-change on `GrossTotal` (flags amount outliers)   |
+| `detect_anomalies_amount_spike_estimation`   | ML.NET spike on `GrossTotal`                             |
+| `detect_anomalies_interval_percent_change`   | Percent-change on days-since-last (flags cadence bursts) |
+| `detect_anomalies_interval_spike_estimation` | ML.NET spike on days-since-last                          |
 
 ### Sample Queries
 
 - `_accounting_documents_all.yaml`: Complete document listing
 - `_accounting_documents_review.yaml`: Documents requiring review
-- `_trees.yaml`: Hierarchical data structures
 
 ## Project Structure
 
@@ -84,11 +125,16 @@ demo-process-automation/
 ├── src/ProcessAutomationDemo/          # Construction kit source
 │   └── ConstructionKit/                # YAML model definitions
 ├── scripts/                            # Automation scripts
-│   ├── om_create_tenants.ps1           # Tenant creation 
-│   ├── om_delete_tenants.ps1           # Delete demo tenant
-│   ├── om_importck.ps1                 # Construction kit import
+│   ├── om_create_tenants.ps1           # Tenant creation (runs from system context)
+│   ├── om_delete_tenants.ps1           # Delete demo tenant (runs from system context)
+│   ├── om_importck.ps1                 # Construction kit import (pulls Basic from catalog)
 │   ├── om_importrt.ps1                 # Runtime data import
-│   └── upload*.ps1                     # File upload utilities
+│   ├── om_deploy_dataflows.ps1         # Deploys every DataFlow from data/_pipelines/
+│   ├── om_update_2_anomaly.ps1         # Unit 2 update: v3 + anomaly pipelines + review queries
+│   ├── uploadFile.ps1 / uploadFilev2.ps1 / uploadFilev3.ps1   # Single-file HTTP upload
+│   ├── uploadDirectoryv3.ps1           # Batch directory upload via v3 endpoint
+│   ├── reset-review-documents.ps1      # Reset REVIEW -> NEW (needs JWT)
+│   └── Delete-AccountingAndFileSystemItems.ps1  # Bulk cleanup (supports -Force)
 ├── data/                               # Sample runtime data
 │   ├── _pipelines/                     # AI processing pipelines
 │   ├── _queries/                       # Pre-built queries
@@ -103,7 +149,7 @@ demo-process-automation/
 
 ```bash
 cd src/ProcessAutomationDemo
-dotnet build --configuration Release
+dotnet build --configuration DebugL
 ```
 
 The build process generates the deployable construction kit YAML files in the output directory.
@@ -117,8 +163,9 @@ The build process generates the deployable construction kit YAML files in the ou
 ### Adding New Pipelines
 
 1. Create new pipeline YAML files in `data/_pipelines/`
-2. Update `om_importrt.ps1` to include the new pipeline
+2. Update `om_importrt.ps1` (or `om_update_2_anomaly.ps1`) to include the new pipeline
 3. Re-run the import script
+4. Re-run `.\om_deploy_dataflows.ps1` so the mesh adapter picks up the new DataFlow
 
 ## Demo Units
 
@@ -196,8 +243,12 @@ This unit demonstrates bulk document processing using the most advanced pipeline
 Process multiple invoices simultaneously with comprehensive data extraction:
 
 ```powershell
-.\uploadDirectoryv3.ps1 -tenantId "processautomationdemo" -baseUrl "https://assets.staging.meshmakers.cloud" -directory "..\data\testFiles\1_anomalies\interval\"
+.\uploadDirectoryv3.ps1 -directory "..\data\testFiles\1_anomalies\interval\"
 ```
+
+Defaults: `-tenant processautomationdemo`, `-baseUrl https://localhost:5020`
+(the mesh adapter's HTTP port). Override either only when running against a
+remote environment.
 
 **Pipeline Features (v3):**
 - Bulk PDF upload to `/uploadaccountingdocumentv3`
@@ -257,14 +308,17 @@ The v3 pipeline extracts a comprehensive data structure:
 #### Usage Example
 
 ```powershell
-# Upload all anomaly test files
-.\uploadDirectoryv3.ps1 -tenantId "processautomationdemo" -baseUrl "https://assets.staging.meshmakers.cloud" -directory "..\data\testFiles\1_anomalies\interval"
+# Upload all anomaly test files (interval set)
+.\uploadDirectoryv3.ps1 -directory "..\data\testFiles\1_anomalies\interval"
 
-# Custom directory with different base URL
-.\uploadDirectoryv3.ps1 -tenantId "processautomationdemo" -baseUrl "https://assets.staging.meshmakers.cloud" -directory "..\data\testFiles\1_anomalies\amounts"
+# Amounts set (triggers the grossTotal anomaly pipelines)
+.\uploadDirectoryv3.ps1 -directory "..\data\testFiles\1_anomalies\amounts"
 
-# Upload only specific file types
-.\uploadDirectoryv3.ps1 -tenantId "processautomationdemo" -baseUrl "https://assets.staging.meshmakers.cloud" -directory "..\data\testFiles\1_anomalies\iban" -filter "*.pdf"
+# IBAN set
+.\uploadDirectoryv3.ps1 -directory "..\data\testFiles\1_anomalies\iban" -filter "*.pdf"
+
+# Point at a remote environment if you are not running locally
+.\uploadDirectoryv3.ps1 -tenant mytenant -baseUrl "https://adapter.example.com" -directory "..\data\testFiles\1_anomalies\amounts"
 ```
 
 #### Expected Results
@@ -279,16 +333,40 @@ This dataset is specifically designed to trigger the anomaly detection pipelines
 
 ### Unit 3: Anomaly Detection - ML.NET vs Statistical Approaches
 
-After importing data with Unit 2, this unit demonstrates two different approaches to anomaly detection in the uploaded accounting documents.
+After importing data with Unit 2, this unit demonstrates two different
+detection **methods** (ML.NET spike vs. statistical percent-change) applied
+to two different **signals**:
 
-#### ML.NET Spike Detection (`detect_anomalies_amount_spike_estimation`)
+- **Amount anomalies** — `GrossTotal` deviations per issuer (e.g. an invoice
+  that is ~10× the usual amount).
+- **Interval anomalies** — `DaysSinceLast` deviations per issuer (e.g. an
+  issuer that suddenly sends a burst of invoices in 5 days when their normal
+  cadence is monthly).
 
-Advanced machine learning-based anomaly detection using ML.NET algorithms:
+The two signals are detected by separate pipelines (four in total), each
+independently triggerable. The interval pipelines compute `DaysSinceLast`
+in-pipeline on each run — no attribute is persisted on the invoice, and
+upload order does not affect the result.
+
+#### ML.NET Spike Detection
+
+Two pipelines share the same ML.NET method but target different signals:
+- `detect_anomalies_amount_spike_estimation` — detects spikes in `GrossTotal`.
+- `detect_anomalies_interval_spike_estimation` — detects spikes in `DaysSinceLast`.
+
+Both use the `MachineLearningAnomalyDetection@1` node with the same parameters
+(`detectSpikes: true`, `minDataPoints: 3`, `pValueHistoryLength: 3`) — only
+the attribute fed into the detector differs.
 
 **Pipeline Execution:**
 ```bash
-octo-cli -c ExecutePipeline -n detect_anomalies_amount_spike_estimation
+octo-cli -c ExecutePipeline -id <PipelineRtId>
 ```
+
+`-id` takes the **Pipeline** RtId (not the DataFlow RtId). Look it up in the
+matching `data/_pipelines/detect_anomalies_{amount|interval}_spike_estimation.yaml`
+— it's the entity with `ckTypeId: System.Communication/Pipeline`. You can
+also run the pipeline from Refinery Studio.
 
 **ML.NET Features:**
 - **Spike Detection**: Uses `MachineLearningAnomalyDetection@1` transformer
@@ -301,18 +379,28 @@ octo-cli -c ExecutePipeline -n detect_anomalies_amount_spike_estimation
 
 **Detection Logic:**
 - Groups documents by `Issuer.CompanyName`
-- Analyzes `GrossTotal` amounts within each company group
+- Analyzes the target attribute (`GrossTotal` or `DaysSinceLast`) within each company group
 - Calculates anomaly scores with statistical confidence levels
 - Provides detailed metrics: `level`, `score`, `pValue`
 
-#### Statistical Percent Change Detection (`detect_anomalies_amount_percent_change`)
+#### Statistical Percent Change Detection
 
-Simple but effective statistical anomaly detection:
+Two pipelines share the same statistical method but target different signals:
+- `detect_anomalies_amount_percent_change` — detects percent-changes in `GrossTotal`.
+- `detect_anomalies_interval_percent_change` — detects percent-changes in `DaysSinceLast`.
+
+Both use the `StatisticalAnomalyDetection@1` node with the same parameters
+(`method: PercentChange`, `threshold: 50.0`, `minSamples: 2`) — only the
+attribute fed into the detector differs.
 
 **Pipeline Execution:**
 ```bash
-octo-cli -c ExecutePipeline -n detect_anomalies_amount_percent_change
+octo-cli -c ExecutePipeline -id <PipelineRtId>
 ```
+
+Same convention as above — use the Pipeline RtId from the matching
+`data/_pipelines/detect_anomalies_{amount|interval}_percent_change.yaml`,
+or trigger it from Refinery Studio.
 
 **Statistical Features:**
 - **Percent Change Method**: Uses `StatisticalAnomalyDetection@1` transformer
@@ -325,8 +413,8 @@ octo-cli -c ExecutePipeline -n detect_anomalies_amount_percent_change
 
 **Detection Logic:**
 - Groups documents by `Issuer.CompanyName`
-- Calculates average `GrossTotal` per company
-- Flags invoices deviating >50% from company average
+- Calculates a rolling average of the target attribute (`GrossTotal` or `DaysSinceLast`) per company
+- Flags invoices whose value deviates >50% from the running baseline
 - Simple percentage-based scoring
 
 #### Comparison: ML.NET vs Statistical Approaches
@@ -352,46 +440,62 @@ Both pipelines perform identical actions when anomalies are detected:
    - **Statistical**: Includes reason and deviation percentage
 3. **Workflow Trigger**: Documents enter review queue for manual inspection
 
-#### Testing with Sample Dataset
+#### Testing with Sample Datasets
 
-The `1_anomalies/interval/` dataset is designed to trigger both detection methods:
+Two complementary sample datasets live under `data/testFiles/1_anomalies/`.
+Each one exercises a different **signal** — the detection **method** (ML.NET
+spike vs. percent-change) is orthogonal and applies to both.
 
-**Normal Pattern**: Monthly invoices (Jan-Apr) from Delta Energie
-**Anomaly Pattern**: Multiple invoices in May 2023 (11th-15th)
+**`amounts/`** — ten invoices from *Demo Energie Gmunden KG*. Jan–Apr 2023 are
+at €288 each, then May–Oct 2023 jump to €2880 each (a 10× step). Triggers
+the `detect_anomalies_amount_*` pipelines:
+- **Percent change** flags May 2023 and June 2023 with `Change: 900,00%`.
+- **ML.NET spike** flags May 2023 with a high-confidence distributional spike
+  (level 1, pValue ~1E-08).
 
-Expected results:
-- **Spike Detection**: Identifies frequency anomaly in May billing
-- **Percent Change**: May detect amount variations if present
+**`interval/`** — ten invoices from *Delta Energie Salzburg GmbH*, all at €288
+so `GrossTotal` is uninteresting. Jan–May 10 2023 are one invoice per month;
+May 11–15 2023 add five more invoices in five days (a cadence burst).
+Triggers the `detect_anomalies_interval_*` pipelines:
+- **Percent change** flags May 11 and May 12 with `Change: ~96,77%` (the
+  first two invoices where `DaysSinceLast` collapses from ~30 to 1).
+- **ML.NET spike** flags May 11 with a high-confidence distributional spike.
 
 #### Demo Workflow
 
-1. **Import Data** (Unit 2):
+The two datasets are independent — you can exercise them in either order, or
+mix them in the same tenant. Each detector only flags the invoices whose
+signal is anomalous, so uploading both sets still produces clean, separable
+results.
+
+1. **Import a dataset** (Unit 2). Pick one or both:
    ```powershell
-   .\uploadDirectoryv3.ps1 -tenantId "processautomationdemo" -baseUrl "https://assets.staging.meshmakers.cloud" -directory "..\data\testFiles\1_anomalies\interval\"
+   # amount anomalies
+   .\uploadDirectoryv3.ps1 -directory "..\data\testFiles\1_anomalies\amounts"
+
+   # interval (cadence) anomalies
+   .\uploadDirectoryv3.ps1 -directory "..\data\testFiles\1_anomalies\interval"
    ```
 
-2. **Run ML.NET Detection**:
+2. **Run a detector** — via `octo-cli -c ExecutePipeline -id <PipelineRtId>`
+   or from Refinery Studio. Pick the pipeline that matches the signal you
+   want to exercise (`detect_anomalies_amount_*` or
+   `detect_anomalies_interval_*`) and the method you want to compare
+   (`*_percent_change` vs. `*_spike_estimation`).
 
-    Run the ML.NET-based anomaly detection pipeline using the AdminPanel.
+3. **Review results**: query documents with `DocumentState = "REVIEW"`.
 
-3. **Reset for Re-testing**:
+4. **Reset for re-testing**:
    ```powershell
    .\reset-review-documents.ps1 -AuthToken "your-token"
    ```
 
-4. **Run Statistical Detection**:
+5. Repeat step 2 with a different pipeline to compare how each
+   method/signal combination behaves on the same data.
 
-    Run the statistical anomaly detection pipeline using the AdminPanel.
-
-5. **Review Results**: Query documents with `DocumentState = "REVIEW"`
-
-6. **Reset for Re-testing**:
-   ```powershell
-   .\reset-review-documents.ps1 -AuthToken "your-token"
-   ```
-
-This demonstrates how different anomaly detection approaches can be applied to the same dataset, 
-showcasing the flexibility of the OctoMesh platform for various analytical needs.
+This demonstrates how different anomaly detection methods can be applied to
+different signals on the same dataset, showcasing the flexibility of the
+OctoMesh platform for various analytical needs.
 
 ## File Upload Utilities
 
@@ -399,8 +503,10 @@ Additional PowerShell scripts for document management:
 
 - `uploadFile.ps1`: Basic single file upload (Pipeline v1)
 - `uploadFilev2.ps1`: AI-enhanced single file upload (Pipeline v2)
+- `uploadFilev3.ps1`: Full-extraction single file upload (Pipeline v3)
 - `uploadDirectoryv3.ps1`: Batch directory upload
 - `reset-review-documents.ps1`: Reset documents from REVIEW status back to NEW
+- `Delete-AccountingAndFileSystemItems.ps1`: Bulk-delete AccountingDocuments + FileSystemItems (pass `-Force` to skip the confirmation prompt)
 
 ### Document Status Management
 
@@ -422,12 +528,18 @@ The `reset-review-documents.ps1` script allows you to reset all documents that a
    - `comment = null`
 3. Reports the number of successfully reset documents
 
-**Note:** This script requires authentication. You'll need to obtain a valid JWT token from your OctoMesh instance:
+**Note:** This script requires a JWT access token. `octo-cli` stores the
+current one in its context file — pull it from there:
 
 ```powershell
-# Example to get a token (adjust parameters as needed)
-octo-cli -c auth-status
+$ctx = Get-Content ~/.octo-cli/contexts.json | ConvertFrom-Json
+$token = $ctx.Contexts.local_processautomationdemo.Authentication.AccessToken
+.\reset-review-documents.ps1 -AuthToken $token
 ```
+
+Run `octo-cli -c AuthStatus` first if the token has expired; it will refresh
+the context automatically. The same token pattern applies to
+`Delete-AccountingAndFileSystemItems.ps1`.
 
 ## Cleanup
 
@@ -443,10 +555,8 @@ To remove the demo tenant:
 
 The construction kit demonstrates several AI capabilities:
 
-- **Document Classification**: Automatic document type detection
-- **Data Extraction**: Key-value pair extraction from documents
-- **Anomaly Detection**: Statistical analysis for unusual patterns
-- **Quality Scoring**: Automated document quality assessment
+- **Data Extraction**: Key-value pair extraction from documents via AI
+- **Anomaly Detection**: Statistical and ML.NET-based analysis for unusual patterns
 
 ### Extensibility
 
@@ -459,11 +569,12 @@ The demo is designed for extension:
 
 ## Documentation
 
-Detailed documentation is available in the `docs/` directory:
+Detailed documentation is available in the `docs/` directory (German originals with English translations):
 
-- `ConstructionKit-Step-by-Step.md`: Complete construction kit development guide
-- `ConstructionKit-Development-Guide.md`: Advanced development patterns
-- `ConstructionKit-Quick-Reference.md`: API reference and examples
+- Complete construction kit development guide: [Deutsch](docs/ConstructionKit-Step-by-Step.md) | [English](docs/ConstructionKit-Step-by-Step-EN.md)
+- Advanced development patterns: [Deutsch](docs/ConstructionKit-Development-Guide.md) | [English](docs/ConstructionKit-Development-Guide-EN.md)
+- API reference and examples: [Deutsch](docs/ConstructionKit-Quick-Reference.md) | [English](docs/ConstructionKit-Quick-Reference-EN.md)
+- OctoMesh Treasure Hunt Challenge: [Deutsch](OCTOMESH_TREASURE_HUNT_DE.md) | [English](OCTOMESH_TREASURE_HUNT_EN.md)
 
 ## Support
 

@@ -1,8 +1,8 @@
 param (
-    [string]$configuration = "Release"
+    [string]$configuration = "DebugL"
 )
 
 octo-cli -c EnableCommunication
 octo-cli -c EnableReporting
-octo-cli -c importck -f ./ck-basic.yaml -w
-octo-cli -c importck -f ../src/ProcessAutomationDemo/bin/$configuration/net9.0/octo-ck-libraries/ProcessAutomationDemo/out/ck-accountingdemo.yaml -w
+octo-cli -c ImportFromCatalog -cn PublicGitHubCatalog -m Basic-2.0.2 -w
+octo-cli -c ImportCk -f ../src/ProcessAutomationDemo/bin/$configuration/net10.0/octo-ck-libraries/ProcessAutomationDemo/out/ck-accountingdemo.yaml -w

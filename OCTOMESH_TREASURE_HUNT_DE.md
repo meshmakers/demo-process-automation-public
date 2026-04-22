@@ -77,14 +77,14 @@ Enthält 20 Rechnungen von 3 verschiedenen Firmen.
 2. Nutze dabei mindestens diese Transformatoren:
    - `GetRtEntitiesByType@1`
    - `ForEach@1`
-   - `MathOperation@1` oder `JavaScriptCode@1`
+   - `Math@1` oder `ExecuteCSharp@1`
    - `Base64Encode@1`
 
 ### 🏗️ Stufe 4: Construction Kit Master (20 Punkte)
 **"Erweitere das Datenmodell"**
 
 **Deine Aufgabe:**
-1. Erweitere das AccountingDemo Construction Kit um:
+1. Erweitere das AccountingDemo Construction Kit um einen neuen Typ `TreasureHunt` mit den Attributen `HunterName` (String), `StageCompleted` (Int) und `CodeFragment` (String). Pseudocode-Skizze:
    ```yaml
    TreasureHunt:
      attributes:
@@ -92,6 +92,7 @@ Enthält 20 Rechnungen von 3 verschiedenen Firmen.
        - StageCompleted: Int
        - CodeFragment: String
    ```
+   Die echte CK-YAML-Syntax (mit `typeId`, `derivedFromCkTypeId`, separaten `attributes/*.yaml`-Dateien etc.) findest du in `docs/ConstructionKit-Quick-Reference.md` und in den bestehenden Dateien unter `src/ProcessAutomationDemo/ConstructionKit/`. Du musst das CK anschließend bauen (`dotnet build -c DebugL`) und neu importieren (`om_importck.ps1`).
 
 2. Erstelle eine Pipeline, die:
    - Ein `TreasureHunt` Entity für jede abgeschlossene Stufe anlegt
@@ -169,16 +170,16 @@ Für weitere Informationen und Beispiele siehe [OctoMesh Docs](https://docs.mesh
 ```
 
 ### Test-Kommandos
-```powershell
 
+```powershell
 # Upload der Testdateien für Stufe 1
-.\uploadDirectoryv3.ps1 -tenant <your tenant> -baseUrl https://adapter.staging.meshmakers.cloud  -directory "../data/testFiles/2_treasure_hunt/stage1/"
-```
+.\uploadDirectoryv3.ps1 -directory "../data/testFiles/2_treasure_hunt/stage1/"
 
 # Upload der Testdateien für Stufe 2
-```powershell
-.\uploadDirectoryv3.ps1 -tenant <your tenant> -baseUrl https://adapter.staging.meshmakers.cloud  -directory "../data/testFiles/2_treasure_hunt/stage2/"
-``` 
+.\uploadDirectoryv3.ps1 -directory "../data/testFiles/2_treasure_hunt/stage2/"
+```
+
+Die Standardwerte (`-tenant processautomationdemo`, `-baseUrl https://localhost:5020`) passen für die lokale Demo. Wenn du gegen eine andere Umgebung oder einen anderen Tenant arbeitest, gib `-tenant` und `-baseUrl` explizit an.
 
 ## 📤 Einreichung
 

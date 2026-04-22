@@ -5,11 +5,11 @@ attributes:
     description: "Transaction date | Example: 2025-09-15"
   - id: CounterpartyAccount
     valueType: Record
-    valueCkRecordId: Basic/BankAccount
+    valueCkRecordId: ${Basic}/BankAccount
     description: "Counterparty account details | Example: { Iban: 'AT89370400440532013000', Name: 'Max Mustermann' }"
   - id: OwnerAccount
     valueType: Record
-    valueCkRecordId: Basic/BankAccount
+    valueCkRecordId: ${Basic}/BankAccount
     description: "Own account details | Example: { Iban: 'AT122345675901234567', Name: 'meshmakers GmbH' }"
   - id: TransactionText
     valueType: String

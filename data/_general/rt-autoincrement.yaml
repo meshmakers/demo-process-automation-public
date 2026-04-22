@@ -1,11 +1,12 @@
 $schema: https://schemas.meshmakers.cloud/runtime-model.schema.json
-dependencies: []
+dependencies:
+  - System-[2.0,3.0)
 entities:
-- rtId: 68c42377af0b987587062f2d
-  ckTypeId: System-1.0.0/AutoIncrement-1.0.0
-  rtWellKnownName: AccountingDocumentNumber
-  attributes:
-    - id: System-1.0.0/AutoIncrement.End-1.0.0
-      value: 9999
-    - id: System-1.0.0/AutoIncrement.CurrentValue-1.0.0
-      value: 0
+  - rtId: 68c42377af0b987587062f2d
+    ckTypeId: System/AutoIncrement
+    rtWellKnownName: AccountingDocumentNumber
+    attributes:
+      - id: System/AutoIncrement.End
+        value: 9999
+      - id: System/AutoIncrement.CurrentValue
+        value: 0

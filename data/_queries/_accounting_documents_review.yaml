@@ -1,34 +1,33 @@
 $schema: https://schemas.meshmakers.cloud/runtime-model.schema.json
-dependencies: []
+dependencies:
+  - System-[2.0,3.0)
 entities:
-- rtId: 68e296d21f73f259bbb1039a
-  rtCreationDateTime: 2025-10-05T16:03:30.4100000Z
-  rtChangedDateTime: 2025-10-05T16:03:30.4100000Z
-  ckTypeId: System-1.0.0/Query-1.0.0
-  associations: []
-  attributes:
-  - id: System-1.0.0/Query.CkTypeId-1.0.0
-    value: AccountingDemo/AccountingDocument
-  - id: System-1.0.0/Query.Types-1.0.0
-    value: 0
-  - id: System-1.0.0/Query.Columns-1.0.0
-    value:
-    - documentState
-    - documentDate
-    - documentNumber
-    - grossTotal
-    - issuer.companyName
-  - id: System-1.0.0/Query.Sorting-1.0.0
-    value: []
-  - id: System-1.0.0/Query.FieldFilter-1.0.0
-    value:
-    - ckRecordId: System-1.0.0/FieldFilter-1.0.0
-      attributes:
-      - id: System-1.0.0/AttributePath-1.0.0
-        value: documentState
-      - id: System-1.0.0/FieldFilter.Operator-1.0.0
-        value: 0
-      - id: System-1.0.0/ComparisonValue-1.0.0
-        value: REVIEW
-  - id: System-1.0.0/Name-1.0.0
-    value: _accounting_documents_review
+  - rtId: 68e296d21f73f259bbb1039a
+    rtCreationDateTime: 2025-10-05T16:03:30.4100000Z
+    rtChangedDateTime: 2025-10-05T16:03:30.4100000Z
+    ckTypeId: System/SimpleRtQuery
+    associations: []
+    attributes:
+      - id: System/Name
+        value: _accounting_documents_review
+      - id: System/Query.CkTypeId
+        value: AccountingDemo/AccountingDocument
+      - id: System/Query.Columns
+        value:
+          - documentState
+          - documentDate
+          - documentNumber
+          - grossTotal
+          - issuer.companyName
+      - id: System/Query.Sorting
+        value: []
+      - id: System/Query.FieldFilter
+        value:
+          - ckRecordId: System/FieldFilter
+            attributes:
+              - id: System/AttributePath
+                value: documentState
+              - id: System/FieldFilter.Operator
+                value: 0
+              - id: System/ComparisonValue
+                value: REVIEW

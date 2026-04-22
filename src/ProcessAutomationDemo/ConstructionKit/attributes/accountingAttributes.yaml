@@ -21,7 +21,7 @@ attributes:
   - id: Issuer
     valueType: Record
     description: "Issuer of the accounting document"
-    valueCkRecordId: Basic/Contact
+    valueCkRecordId: ${Basic}/Contact
   - id: TransactionNumber
     valueType: String
     description: "Example: Invoice No: 2025-09-15-001"

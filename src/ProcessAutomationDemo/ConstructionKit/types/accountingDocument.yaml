@@ -4,7 +4,7 @@ types:
     derivedFromCkTypeId: ${System}/Entity
     description: "An accounting related document entity that contains accounting information."
     attributes:
-      - id: Basic/Comment
+      - id: ${Basic}/Comment
         name: Comment
         isOptional: true
       - id: ${this}/GrossTotal
@@ -19,13 +19,13 @@ types:
       - id: ${this}/Issuer
         name: Issuer
         isOptional: true
-      - id: Basic/BankAccount
+      - id: ${Basic}/BankAccount
         name: BankAccount
         isOptional: true
-      - id: Basic/DocumentNumber
+      - id: ${Basic}/DocumentNumber
         name: DocumentNumber
         autoIncrementReference: "AccountingDocumentNumber"
-      - id: Basic/DocumentDate
+      - id: ${Basic}/DocumentDate
         name: DocumentDate
         isOptional: true
       - id: ${this}/TransactionNumber
