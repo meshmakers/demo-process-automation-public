@@ -18,7 +18,7 @@ variables:
   - name: solutionFile
     value: 'Octo.Template.sln'
   - name: artifactsFrameworkVersion
-    value: 'net9.0'
+    value: 'net10.0'
   - name: buildConfiguration
     value: 'Release'
   - name: buildPlatform

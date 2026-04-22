@@ -6,7 +6,7 @@ param (
 # defaults to InsertOnly and fails with duplicate-key errors on already-imported
 # entities.
 
-octo-cli -c ImportCk -f ../src/ProcessAutomationDemo/bin/$configuration/net10.0/octo-ck-libraries/ProcessAutomationDemo/out/ck-accountingdemo.yaml -w
+octo-cli -c ImportCk -f ../src/ProcessAutomationDemo/bin/$configuration/net10.0/octo-ck-libraries/ProcessAutomationDemo/out/ck-accountingdemo-2.yaml -w
 
 octo-cli -c ImportRt -f ./../data/_pipelines/upload_accounting_document_v3.yaml -w -r
 octo-cli -c ImportRt -f ./../data/_pipelines/detect_anomalies_amount_percent_change.yaml -w -r
