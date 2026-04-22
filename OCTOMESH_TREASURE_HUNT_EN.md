@@ -23,12 +23,22 @@ Build clever OctoMesh pipelines to find hidden clues in documents, detect anomal
 In this folder you will find 10 PDF invoices: `data/testFiles/2_treasure_hunt/stage1/`
 
 **Your task:**
-1. Build a pipeline that loads all AccountingDocuments with status "NEW"
-2. Find the following hidden clues:
-   - All IBANs starting with "AT42"
-   - Invoice numbers matching the pattern "2024-XXXX-MM" (MM = Meshmakers)
-   - Net amounts (NetTotal) that are divisible by 13
-3. Sum the last 4 digits of all found IBANs → **Code A**
+1. Build a pipeline that loads all `AccountingDocument` entities with
+   `DocumentState == NEW`.
+2. Find the following hidden clues among the loaded documents (the first
+   bullet is what feeds Code A; the other two are independent easter eggs
+   that you should *also* be able to surface with your pipeline, but they
+   are not part of the Code A calculation):
+   - All IBANs starting with `AT42`.
+   - Invoice numbers matching the regex `^2024-\d{4}-MM$` (MM = Meshmakers).
+   - Net amounts (`NetTotal`) that are divisible by 13.
+3. **Code A — per-digit sum of the AT42 IBAN suffixes.** For every matching
+   IBAN take its last 4 characters (which are digits), add those four digits
+   together, then sum that per-IBAN digit-sum across all matching IBANs.
+   Example: IBAN `AT42 1234 5678 9012 3456` contributes `3 + 4 + 5 + 6 = 18`;
+   if that were the only AT42 match Code A would be `18`. This is **not** the
+   same as concatenating the last 4 digits and treating them as one integer.
+   → **Code A**
 
 **Pipeline design tips**
 * Create a new pipeline for this stage, e.g. `treasure_hunt_stage1`
@@ -56,26 +66,38 @@ Upload directory: `data/testFiles/2_treasure_hunt/stage2/`
 Contains 20 invoices from 3 different companies.
 
 **Your task:**
-1. Use the `detect_anomalies_amount_spike_estimation` pipeline as a template
-2. Modify the parameters so that exactly 3 documents are detected as anomalies:
-   - These have net amounts that are prime numbers > 1000
-3. The sum of the 3 anomaly amounts divided by 100 → **Code B**
+1. Use the `detect_anomalies_amount_spike_estimation` pipeline as a
+   **structural template** (same `GetRtEntitiesByType → ForEach → flag → update`
+   shape) - but swap the ML.NET spike detector for a primality predicate,
+   because the spec requires flagging by a mathematical property
+   (primality), not a statistical outlier.
+2. Exactly 3 of the 21 invoices must end up flagged as anomalies. An invoice
+   is an anomaly iff its `NetTotal` is an integer, is **greater than 1000**,
+   and is **prime** (e.g. a trial-division test in an `ExecuteCSharp@1`).
+   Flip those 3 documents to `DocumentState = REVIEW` so Stage 3 can pick
+   them up.
+3. **Code B** = (sum of those 3 `NetTotal` values) / 100, formatted with a
+   period decimal separator and two decimal places (e.g. `30.41`). → **Code B**
 
 ### 🔧 Stage 3: Pipeline Engineering (30 Points)
 **"The transformation master"**
 
 **Your task:**
 1. Build a pipeline that:
-   - Loads all documents with status "REVIEW" from Stage 2
-   - Takes their `NetTotal` values and performs the following calculation:
+   - Loads all `AccountingDocument` entities with `DocumentState == REVIEW`
+     (those are the 3 prime-NetTotal invoices from Stage 2).
+   - Takes their `NetTotal` values and computes:
      ```
-     Result = (Sum of all NetTotal) * (Number of documents) / 42
+     Result = (Sum of all NetTotals) * (Number of documents) / 42
      ```
-   - Rounds the result to 2 decimal places
-   - Encodes it with Base64 → **Code C**
+   - Rounds the result to exactly 2 decimal places (half-to-even), and
+     formats it with a period decimal separator in a culture-invariant
+     way (e.g. `217.21`, never `217,21`).
+   - UTF-8-encodes that formatted string and Base64-encodes the bytes
+     (`Base64Encode@1` handles both steps in one node). → **Code C**
 
 2. Use at least the following transformers:
-   - `GetRtEntitiesByType@1`
+   - `GetRtEntitiesByType@1` (with a `documentState == REVIEW` field filter)
    - `ForEach@1`
    - `Math@1` or `ExecuteCSharp@1`
    - `Base64Encode@1`
@@ -95,9 +117,14 @@ Contains 20 invoices from 3 different companies.
    The real CK YAML syntax (with `typeId`, `derivedFromCkTypeId`, separate `attributes/*.yaml` files etc.) can be found in `docs/ConstructionKit-Quick-Reference-EN.md` and in the existing files under `src/ProcessAutomationDemo/ConstructionKit/`. You then have to build the CK (`dotnet build -c DebugL`) and re-import it (`om_importck.ps1`).
 
 2. Build a pipeline that:
-   - Creates a `TreasureHunt` entity for each completed stage
-   - Stores codes A, B, C as `CodeFragment`
-   - Queries all entities and concatenates the codes
+   - Creates a `TreasureHunt` entity for each completed stage: one per
+     stage, with `HunterName` identifying the stage (e.g. `Stage1/2/3`),
+     `StageCompleted` ∈ {1, 2, 3}, and `CodeFragment` set to the stage's
+     code (A, B, or C respectively, as a string).
+   - Queries those entities back (order by `StageCompleted` ascending so
+     you always get A, B, C in that order), then concatenates the three
+     `CodeFragment` values with `-` separators - i.e. feeds them into the
+     final-key formula below.
 
 ### 🔑 The final key
 
@@ -106,7 +133,12 @@ Generate the final key with the following formula:
 OCTO-2025-{MD5(Code_A + "-" + Code_B + "-" + Code_C).substring(0,8).toUpperCase()}
 ```
 
-**Example:**
+`MD5(...)` is the 32-char lowercase hexadecimal digest of the UTF-8 bytes
+of the concatenation. `substring(0,8).toUpperCase()` yields 8 uppercase
+hex characters; prefix that with `OCTO-2025-`. Use `Hash@1`
+(`algorithm: Md5`, `inputFormat: String`) for the hash step.
+
+**Example (illustrative, not from this dataset):**
 - Code A: 4289
 - Code B: 171.50  
 - Code C: MTIzNC41Ng==

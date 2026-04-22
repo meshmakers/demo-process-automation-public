@@ -23,12 +23,25 @@ Konstruiere clevere OctoMesh-Pipelines, um versteckte Hinweise in Dokumenten zu 
 In diesem Ordner findest du 10 PDF-Rechnungen: `data/testFiles/2_treasure_hunt/stage1/`
 
 **Deine Aufgabe:**
-1. Erstelle eine Pipeline, die alle AccountingDocuments mit Status "NEW" lädt
-2. Finde folgende versteckte Hinweise:
-   - Alle IBANs, die mit "AT42" beginnen
-   - Rechnungsnummern, die das Muster "2024-XXXX-MM" haben (MM = Meshmakers)
-   - Netto-Beträge (NetTotal), die durch 13 teilbar sind
-3. Summiere die letzten 4 Ziffern aller gefundenen IBANs → **Code A**
+1. Erstelle eine Pipeline, die alle `AccountingDocument`-Entitäten mit
+   `DocumentState == NEW` lädt.
+2. Finde folgende versteckte Hinweise in den geladenen Dokumenten (nur der
+   erste Punkt fließt in Code A ein; die anderen beiden sind unabhängige
+   Easter-Eggs, die du mit derselben Pipeline ebenfalls aufdecken können
+   solltest, sie gehören aber nicht zur Code-A-Berechnung):
+   - Alle IBANs, die mit `AT42` beginnen.
+   - Rechnungsnummern, die auf den Regex `^2024-\d{4}-MM$` passen
+     (MM = Meshmakers).
+   - Netto-Beträge (`NetTotal`), die durch 13 teilbar sind.
+3. **Code A — ziffernweise Summe der AT42-IBAN-Enden.** Für jede
+   passende IBAN nimmst du die letzten 4 Zeichen (lauter Ziffern) und
+   addierst diese vier Ziffern **einzeln**; die so entstehende
+   Ziffernsumme pro IBAN summierst du anschließend über alle passenden
+   IBANs. Beispiel: `AT42 1234 5678 9012 3456` liefert
+   `3 + 4 + 5 + 6 = 18`; wäre dies die einzige AT42-IBAN, wäre Code A
+   gleich `18`. Es ist **nicht** gemeint, die letzten 4 Ziffern als
+   vierstellige Zahl zu interpretieren und diese Zahlen zu summieren.
+   → **Code A**
 
 **Tipps zum Pipeline-Design**
 * Erstelle für diese Stufe eine neue Pipeline, z.B. `treasure_hunt_stage1`
@@ -56,26 +69,40 @@ Upload-Verzeichnis: `data/testFiles/2_treasure_hunt/stage2/`
 Enthält 20 Rechnungen von 3 verschiedenen Firmen.
 
 **Deine Aufgabe:**
-1. Nutze die `detect_anomalies_amount_spike_estimation` Pipeline als Vorlage
-2. Modifiziere die Parameter so, dass genau 3 Dokumente als Anomalien erkannt werden:
-   - Diese haben Netto-Beträge, die Primzahlen > 1000 sind
-3. Die Summe der 3 Anomalie-Beträge geteilt durch 100 → **Code B**
+1. Nutze die `detect_anomalies_amount_spike_estimation` Pipeline als
+   **strukturelle Vorlage** (gleicher Ablauf
+   `GetRtEntitiesByType → ForEach → Flag setzen → Update`) - ersetze aber
+   den ML.NET-Spike-Detector durch einen Primzahl-Test, denn die Aufgabe
+   verlangt die Markierung nach einer mathematischen Eigenschaft
+   (Primalität), nicht nach einem statistischen Ausreißer.
+2. Genau 3 der 21 Rechnungen sollen als Anomalien markiert werden. Ein
+   Dokument ist eine Anomalie genau dann, wenn sein `NetTotal` ganzzahlig
+   ist, **größer als 1000** und **prim** ist (z. B. Trial-Division-Test
+   in einem `ExecuteCSharp@1`). Diese 3 Dokumente bringst du auf
+   `DocumentState = REVIEW`, damit Stufe 3 sie weiterverarbeiten kann.
+3. **Code B** = (Summe dieser 3 `NetTotal`-Werte) / 100, formatiert mit
+   Punkt als Dezimaltrennzeichen und 2 Nachkommastellen (z. B. `30.41`).
+   → **Code B**
 
 ### 🔧 Stufe 3: Pipeline Engineering (30 Punkte)
 **"Der Transformations-Meister"**
 
 **Deine Aufgabe:**
 1. Baue eine Pipeline, die:
-   - Alle Dokumente mit Status "REVIEW" aus Stufe 2 lädt
-   - Deren `NetTotal` Werte nimmt und folgende Berechnung durchführt:
+   - Alle `AccountingDocument`-Entitäten mit `DocumentState == REVIEW`
+     lädt (das sind die 3 Primzahl-Anomalien aus Stufe 2).
+   - Deren `NetTotal`-Werte nimmt und berechnet:
      ```
      Ergebnis = (Summe aller NetTotal) * (Anzahl Dokumente) / 42
      ```
-   - Das Ergebnis auf 2 Dezimalstellen rundet
-   - Mit Base64 encodiert → **Code C**
+   - Das Ergebnis auf exakt 2 Nachkommastellen rundet (Banker's Rounding)
+     und culture-invariant mit Punkt als Dezimaltrennzeichen formatiert
+     (z. B. `217.21`, niemals `217,21`).
+   - Den formatierten String UTF-8-kodiert und dessen Bytes Base64-codiert
+     (`Base64Encode@1` erledigt beide Schritte in einem Node). → **Code C**
 
 2. Nutze dabei mindestens diese Transformatoren:
-   - `GetRtEntitiesByType@1`
+   - `GetRtEntitiesByType@1` (mit Field-Filter `documentState == REVIEW`)
    - `ForEach@1`
    - `Math@1` oder `ExecuteCSharp@1`
    - `Base64Encode@1`
@@ -95,9 +122,14 @@ Enthält 20 Rechnungen von 3 verschiedenen Firmen.
    Die echte CK-YAML-Syntax (mit `typeId`, `derivedFromCkTypeId`, separaten `attributes/*.yaml`-Dateien etc.) findest du in `docs/ConstructionKit-Quick-Reference.md` und in den bestehenden Dateien unter `src/ProcessAutomationDemo/ConstructionKit/`. Du musst das CK anschließend bauen (`dotnet build -c DebugL`) und neu importieren (`om_importck.ps1`).
 
 2. Erstelle eine Pipeline, die:
-   - Ein `TreasureHunt` Entity für jede abgeschlossene Stufe anlegt
-   - Die Codes A, B, C als `CodeFragment` speichert
-   - Alle Entities abfragt und die Codes konkateniert
+   - Pro Stufe ein `TreasureHunt`-Entity anlegt: `HunterName`
+     identifiziert die Stufe (z. B. `Stage1/2/3`), `StageCompleted` ∈
+     {1, 2, 3}, und `CodeFragment` enthält den jeweiligen Code (A, B
+     oder C, als String).
+   - Alle `TreasureHunt`-Entities wieder abfragt (sortiert nach
+     `StageCompleted` aufsteigend, damit du die Codes garantiert in der
+     Reihenfolge A, B, C bekommst) und die drei `CodeFragment`-Werte mit
+     `-` konkateniert - das ist der Input für die Formel unten.
 
 ### 🔑 Der finale Schlüssel
 
@@ -106,7 +138,12 @@ Generiere den finalen Schlüssel mit folgender Formel:
 OCTO-2025-{MD5(Code_A + "-" + Code_B + "-" + Code_C).substring(0,8).toUpperCase()}
 ```
 
-**Beispiel:**
+`MD5(...)` ist der 32-stellige lowercase-Hex-Digest der UTF-8-Bytes der
+Konkatenation. `substring(0,8).toUpperCase()` liefert 8 großgeschriebene
+Hex-Zeichen; davor kommt der Präfix `OCTO-2025-`. Für die Hash-Stufe
+nutzt du `Hash@1` (`algorithm: Md5`, `inputFormat: String`).
+
+**Beispiel (illustrativ, nicht aus diesem Datensatz):**
 - Code A: 4289
 - Code B: 171.50  
 - Code C: MTIzNC41Ng==
