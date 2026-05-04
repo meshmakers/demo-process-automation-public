@@ -17,7 +17,7 @@ entities:
         targetRtId: 68c3d7248351566e3753fc7a
         targetCkTypeId: System.Communication/DataFlow
       - roleId: System.Communication/Executes
-        targetRtId: 67e10c0bfe3e19891bbfd261
+        targetRtId: 66004fda527ac79a03ecedd7
         targetCkTypeId: System.Communication/Adapter
     attributes:
       - id: System/Name

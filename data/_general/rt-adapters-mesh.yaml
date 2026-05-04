@@ -2,7 +2,7 @@ $schema: https://schemas.meshmakers.cloud/runtime-model.schema.json
 dependencies:
   - System.Communication-[3.0,4.0)
 entities:
-  - rtId: 67e10c0bfe3e19891bbfd261
+  - rtId: 66004fda527ac79a03ecedd7
     rtCreationDateTime: 2025-03-24T07:38:51.0810000Z
     rtChangedDateTime: 2025-03-24T11:31:36.9190000Z
     ckTypeId: System.Communication/Adapter

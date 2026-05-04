@@ -216,7 +216,7 @@ Für weitere Informationen und Beispiele siehe [OctoMesh Docs](https://docs.mesh
 .\uploadDirectoryv3.ps1 -directory "../data/testFiles/2_treasure_hunt/stage2/"
 ```
 
-Die Standardwerte (`-tenant processautomationdemo`, `-baseUrl https://localhost:5020`) passen für die lokale Demo. Wenn du gegen eine andere Umgebung oder einen anderen Tenant arbeitest, gib `-tenant` und `-baseUrl` explizit an.
+Die Standardwerte (`-tenant meshtest`, `-baseUrl https://localhost:5020`) passen für die lokale Demo. Wenn du gegen eine andere Umgebung oder einen anderen Tenant arbeitest, gib `-tenant` und `-baseUrl` explizit an.
 
 ## 📤 Einreichung
 

@@ -211,7 +211,7 @@ For more information and examples see [OctoMesh Docs](https://docs.meshmakers.cl
 .\uploadDirectoryv3.ps1 -directory "../data/testFiles/2_treasure_hunt/stage2/"
 ```
 
-The default values (`-tenant processautomationdemo`, `-baseUrl https://localhost:5020`) work for the local demo. If you are working against a different environment or a different tenant, specify `-tenant` and `-baseUrl` explicitly.
+The default values (`-tenant meshtest`, `-baseUrl https://localhost:5020`) work for the local demo. If you are working against a different environment or a different tenant, specify `-tenant` and `-baseUrl` explicitly.
 
 ## 📤 Submission
 

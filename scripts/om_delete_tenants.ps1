@@ -1,5 +1,5 @@
 param (
-    [string]$tenantId = "processautomationdemo",
+    [string]$tenantId = "meshtest",
     [string]$systemContextName = "local_octosystem"
 )
 

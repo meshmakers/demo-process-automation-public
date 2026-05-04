@@ -15,41 +15,35 @@ This demo showcases a complete process automation solution built on the OctoMesh
 
 ### Prerequisites
 
-- OctoMesh CLI (`octo-cli`) installed and configured
-- PowerShell Core
+A working OctoMesh installation with the `meshtest` tenant active. The
+[`getting-started`](https://github.com/meshmakers/getting-started) repo sets
+this up end-to-end — install Docker Desktop, PowerShell 7+, and openssl,
+then run:
+
+```powershell
+git clone https://github.com/meshmakers/getting-started.git
+cd getting-started/scripts
+./om-install.ps1
+./om-login-local.ps1
+```
+
+That brings up the full OctoMesh stack (identity, asset repo, communication
+controller, **mesh adapter on port 5020**, MongoDB, RabbitMQ, CrateDB) in
+Docker against the `meshtest` tenant, registers the `local_meshtest` CLI
+context, and logs you in. Follow [the getting-started README](https://github.com/meshmakers/getting-started)
+for full details (host file entry, certificate trust, license keys).
+
+In addition, this demo needs:
+
 - .NET 10.0 SDK (for building the construction kit)
-- An existing `local_octosystem` CLI context that is logged in. The create/delete
-  scripts run from that stable system-tenant context so the auth token survives
-  the tenant lifecycle. Register it once with `octo-cli -c AddContext` +
-  `octo-cli -c LogIn -i`.
-- A running `octo-mesh-adapter` process (this demo uses its HTTP endpoints on
-  port 5020). The adapter registers with the Communication Controller at
-  startup; restart it after recreating the tenant.
 - Build the construction kit before importing it:
   `dotnet build src/ProcessAutomationDemo -c DebugL`
 
-### 1. Create Tenant
+The committed sample data is wired to the mesh adapter that the
+getting-started Docker stack registers automatically (rtId
+`66004fda527ac79a03ecedd7`), so no extra adapter setup is required.
 
-```powershell
-cd scripts
-.\om_create_tenants.ps1
-```
-
-This creates a new tenant named `processautomationdemo`, auto-provisions the
-current system user as its admin, registers a `local_processautomationdemo`
-CLI context, and switches the active context to it.
-
-### 2. Log in to the new tenant (interactive)
-
-```powershell
-octo-cli -c LogIn -i
-```
-
-Required: the fresh context has no tokens yet. Until this step succeeds every
-tenant-scoped command (`EnableCommunication`, `ImportCk`, `ImportRt`,
-`DeployDataFlow`) will fail on auth refresh.
-
-### 3. Import Construction Kit Models
+### 1. Import Construction Kit Models
 
 ```powershell
 .\om_importck.ps1
@@ -62,7 +56,7 @@ Imports the custom accounting demo model and automatically pulls the `Basic` con
 
 No bundled Basic CK is shipped — any recent OctoMesh installation with public-catalog access will resolve it on import.
 
-### 4. Import Runtime Data
+### 2. Import Runtime Data
 
 ```powershell
 .\om_importrt.ps1
@@ -72,12 +66,12 @@ Loads sample data including:
 - Document processing pipelines
 - Anomaly detection algorithms
 - Pre-configured queries
-- Mesh adapters
+- Mesh adapter entity (upserts onto the existing one Docker registered)
 
 The script imports with `-r` (Upsert), so re-running it against an existing
 tenant is safe.
 
-### 5. Deploy DataFlows to the mesh adapter
+### 3. Deploy DataFlows to the mesh adapter
 
 ```powershell
 .\om_deploy_dataflows.ps1
@@ -125,8 +119,8 @@ demo-process-automation/
 ├── src/ProcessAutomationDemo/          # Construction kit source
 │   └── ConstructionKit/                # YAML model definitions
 ├── scripts/                            # Automation scripts
-│   ├── om_create_tenants.ps1           # Tenant creation (runs from system context)
-│   ├── om_delete_tenants.ps1           # Delete demo tenant (runs from system context)
+│   ├── om_create_tenants.ps1           # Create the demo tenant (runs from system context, defaults to meshtest)
+│   ├── om_delete_tenants.ps1           # Delete the demo tenant (runs from system context, defaults to meshtest)
 │   ├── om_importck.ps1                 # Construction kit import (pulls Basic from catalog)
 │   ├── om_importrt.ps1                 # Runtime data import
 │   ├── om_deploy_dataflows.ps1         # Deploys every DataFlow from data/_pipelines/
@@ -246,9 +240,9 @@ Process multiple invoices simultaneously with comprehensive data extraction:
 .\uploadDirectoryv3.ps1 -directory "..\data\testFiles\1_anomalies\interval\"
 ```
 
-Defaults: `-tenant processautomationdemo`, `-baseUrl https://localhost:5020`
+Defaults: `-tenant meshtest`, `-baseUrl https://localhost:5020`
 (the mesh adapter's HTTP port). Override either only when running against a
-remote environment.
+remote environment or a separate demo tenant.
 
 **Pipeline Features (v3):**
 - Bulk PDF upload to `/uploadaccountingdocumentv3`
@@ -519,7 +513,7 @@ The `reset-review-documents.ps1` script allows you to reset all documents that a
 
 **Optional Parameters:**
 - `-BaseUrl`: OctoMesh server base URI (default: `https://localhost:5001`)
-- `-tenant`: Tenant name (default: `processautomationdemo`)
+- `-tenant`: Tenant name (default: `meshtest`)
 
 **What it does:**
 1. Queries all `AccountingDocument` entities with `documentState = "REVIEW"`
@@ -533,7 +527,7 @@ current one in its context file — pull it from there:
 
 ```powershell
 $ctx = Get-Content ~/.octo-cli/contexts.json | ConvertFrom-Json
-$token = $ctx.Contexts.local_processautomationdemo.Authentication.AccessToken
+$token = $ctx.Contexts.local_meshtest.Authentication.AccessToken
 .\reset-review-documents.ps1 -AuthToken $token
 ```
 
@@ -543,11 +537,30 @@ the context automatically. The same token pattern applies to
 
 ## Cleanup
 
-To remove the demo tenant:
+To remove just the demo data (AccountingDocuments + FileSystemItems) from the
+`meshtest` tenant without touching the rest of the getting-started setup:
+
+```powershell
+.\Delete-AccountingAndFileSystemItems.ps1 -AuthToken $token
+```
+
+To recycle the whole `meshtest` tenant (drops it and recreates it empty),
+use the tenant scripts — both default to `-tenantId meshtest`:
 
 ```powershell
 .\om_delete_tenants.ps1
+.\om_create_tenants.ps1
+octo-cli -c LogIn -i
 ```
+
+Recreating the tenant invalidates the existing CLI tokens, so the
+interactive log-in is required afterwards. Restart `octo-mesh-adapter`
+(or restart the Docker stack) so it re-registers with the
+Communication Controller, then re-run `om_importck.ps1` /
+`om_importrt.ps1` / `om_deploy_dataflows.ps1`.
+
+Both scripts also accept `-tenantId <name>` if you want to operate on a
+different tenant.
 
 ## Advanced Features
 

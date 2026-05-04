@@ -1,6 +1,6 @@
 param (
     [string]$file,
-    [string]$tenant = "processautomationdemo",
+    [string]$tenant = "meshtest",
     [string]$baseUrl = "https://localhost:5020"
 )
 

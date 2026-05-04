@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 param(
-    [string]$tenant = "processautomationdemo",
+    [string]$tenant = "meshtest",
 
     [string]$BaseUrl = "https://localhost:5001",
 

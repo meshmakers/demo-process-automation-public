@@ -1,7 +1,7 @@
 param(
     [string]$BaseUrl = "https://localhost:5001",
 
-    [string]$tenant = "processautomationdemo",
+    [string]$tenant = "meshtest",
 
     [Parameter(Mandatory=$true)]
     [string]$AuthToken
