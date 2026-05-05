@@ -275,7 +275,7 @@ Process multiple invoices simultaneously with comprehensive data extraction:
 ```
 
 Defaults: `-tenant meshtest`, `-baseUrl https://localhost:5020`
-(the mesh adapter's HTTP port). Override either only when running against a
+(the mesh adapter's HTTPS port). Override either only when running against a
 remote environment or a separate demo tenant.
 
 **Pipeline Features (v3):**
