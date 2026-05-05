@@ -14,6 +14,11 @@ Build clever OctoMesh pipelines to find hidden clues in documents, detect anomal
 - Basic knowledge of YAML and JSON
 - Enjoyment of tricky puzzles and data analysis
 - The Process Automation Demo repository
+- An Anthropic API key — the `AnthropicAiQuery@1` node resolves it from a
+  `System.Communication/AiConfiguration` runtime entity. Run
+  `.\om_setup_ai_configuration.ps1` once between `om_importrt.ps1` and
+  `om_deploy_dataflows.ps1` (see the README); pipelines that need AI carry a
+  stable `Uses` association to that configuration.
 
 ## 🗺️ The Challenge - 4 Stages to the Treasure
 

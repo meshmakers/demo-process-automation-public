@@ -24,6 +24,9 @@ entities:
       - roleId: System.Communication/Executes
         targetRtId: 66004fda527ac79a03ecedd7
         targetCkTypeId: System.Communication/Adapter
+      - roleId: System.Communication/Uses
+        targetRtId: aa0d15c00000000000a1c0a1
+        targetCkTypeId: System.Communication/AiConfiguration
     attributes:
       - id: System/Name
         value: upload_accounting_document_v3_pipeline
@@ -68,7 +71,8 @@ entities:
                   includeConfidence: true
                   confidenceOutputPath: $.ocr.confidence
                 - type: AnthropicAiQuery@1
-                  description: Ask the AI to extract a full invoice JSON (amounts, bank account, issuer, address, transaction); the schema is conveyed via jsonFormatSample
+                  description: Ask the AI to extract a full invoice JSON (amounts, bank account, issuer, address, transaction); the schema is conveyed via jsonFormatSample. API key resolved via the 'Anthropic' AiConfiguration linked through System.Communication/Uses.
+                  apiKeyConfigurationName: Anthropic
                   question: Extract all relevant accounting information, as shown in the example. The data may be encoded in UTF-8.
                   path: $.ocr.result
                   temperature: 0.1

@@ -71,7 +71,40 @@ Loads sample data including:
 The script imports with `-r` (Upsert), so re-running it against an existing
 tenant is safe.
 
-### 3. Deploy DataFlows to the mesh adapter
+### 3. Configure the Anthropic API key (only if you use the AI pipelines)
+
+```powershell
+.\om_setup_ai_configuration.ps1
+```
+
+Pipelines that include `AnthropicAiQuery@1` (v2 and v3 upload endpoints)
+resolve the API key from a `System.Communication/AiConfiguration` runtime
+entity rather than carrying it in the YAML. The script prompts for the key (input hidden), writes a one-shot
+import file to `$env:TEMP`, calls `ImportRt -w -r`, and deletes the temp file
+in `finally`.
+
+It always lands at the same well-known RtId (`aa0d15c00000000000a1c0a1`,
+`RtWellKnownName=Anthropic`), so the pipelines reference it via a stable
+`System.Communication/Uses` association. Re-running the script with a new key
+rotates the credential — pipelines pick up the change on the next deployment
+or execution. Skip this step if you only want to exercise the
+non-AI pipelines (v1, anomaly detection, Discord smoke tests).
+
+The AnthropicAiQuery@1 node currently reads only `ApiKey` (and
+`McpServerUrl`) from the AiConfiguration entity; model / max-tokens /
+temperature still come from the per-node config in the pipeline YAML.
+
+Each pipeline that uses AI has to declare its own
+`System.Communication/Uses` association — the lookup is per-pipeline, not
+per-adapter or per-data-flow. The committed v2 and v3 pipelines already do
+this; any new pipeline you write needs the same association on the
+`Pipeline` entity.
+
+You can also create the AiConfiguration through Refinery Studio
+(`/general/configurations/new/ai`) — just use `RtWellKnownName=Anthropic` if
+you want the existing pipelines to find it without YAML edits.
+
+### 4. Deploy DataFlows to the mesh adapter
 
 ```powershell
 .\om_deploy_dataflows.ps1
@@ -123,6 +156,7 @@ demo-process-automation/
 │   ├── om_delete_tenants.ps1           # Delete the demo tenant (runs from system context, defaults to meshtest)
 │   ├── om_importck.ps1                 # Construction kit import (pulls Basic from catalog)
 │   ├── om_importrt.ps1                 # Runtime data import
+│   ├── om_setup_ai_configuration.ps1   # Interactive — imports the 'Anthropic' AiConfiguration with your API key
 │   ├── om_deploy_dataflows.ps1         # Deploys every DataFlow from data/_pipelines/
 │   ├── om_update_2_anomaly.ps1         # Unit 2 update: v3 + anomaly pipelines + review queries
 │   ├── uploadFile.ps1 / uploadFilev2.ps1 / uploadFilev3.ps1   # Single-file HTTP upload

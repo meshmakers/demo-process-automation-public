@@ -14,6 +14,11 @@ Konstruiere clevere OctoMesh-Pipelines, um versteckte Hinweise in Dokumenten zu 
 - Grundkenntnisse in YAML und JSON
 - Spaß an kniffligen Rätseln und Datenanalyse
 - Das Process Automation Demo Repository
+- Ein Anthropic-API-Key — der `AnthropicAiQuery@1`-Node liest ihn aus einer
+  `System.Communication/AiConfiguration`-Runtime-Entität. Führe einmalig
+  `.\om_setup_ai_configuration.ps1` zwischen `om_importrt.ps1` und
+  `om_deploy_dataflows.ps1` aus (siehe README); Pipelines mit AI tragen eine
+  stabile `Uses`-Assoziation auf diese Konfiguration.
 
 ## 🗺️ Die Challenge - 4 Stufen zum Schatz
 
