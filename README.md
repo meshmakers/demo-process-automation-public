@@ -43,7 +43,49 @@ The committed sample data is wired to the mesh adapter that the
 getting-started Docker stack registers automatically (rtId
 `66004fda527ac79a03ecedd7`), so no extra adapter setup is required.
 
-### 1. Import Construction Kit Models
+### 1. Create the demo tenant
+
+`om_create_tenants.ps1` provisions the demo tenant (defaults to
+`meshtest`). `Create`/`Delete` commands have to run from a **system-tenant
+context** — `local_octosystem` is the one that getting-started's
+`om-login-local.ps1` registers. Switch to it before running the script;
+otherwise the call hits the wrong tenant scope:
+
+```powershell
+# Option A: select the system context
+octo-cli -c UseContext -n local_octosystem
+
+# Option B: change the active tenantId on the current context
+octo-cli -c Config -tid <systemTenantId>
+```
+
+After switching, log in so the system context has valid auth tokens for
+the `Create` call:
+
+```powershell
+octo-cli -c LogIn -i
+```
+
+See the [octo-cli docs](https://docs.meshmakers.cloud/docs/technologyGuide/tools/octo-cli)
+for context-management details.
+
+Then create the tenant:
+
+```powershell
+.\om_create_tenants.ps1
+```
+
+The script registers the per-tenant context (`local_meshtest`) and
+switches to it. Log in again — this time into `meshtest`, but with the
+**same octosystem credentials** (the `Create` call auto-provisions that
+user as admin of the new tenant), so the import steps below have valid
+tenant-scoped tokens:
+
+```powershell
+octo-cli -c LogIn -i
+```
+
+### 2. Import Construction Kit Models
 
 ```powershell
 .\om_importck.ps1
@@ -56,7 +98,7 @@ Imports the custom accounting demo model and automatically pulls the `Basic` con
 
 No bundled Basic CK is shipped — any recent OctoMesh installation with public-catalog access will resolve it on import.
 
-### 2. Import Runtime Data
+### 3. Import Runtime Data
 
 ```powershell
 .\om_importrt.ps1
@@ -71,7 +113,7 @@ Loads sample data including:
 The script imports with `-r` (Upsert), so re-running it against an existing
 tenant is safe.
 
-### 3. Configure the Anthropic API key (only if you use the AI pipelines)
+### 4. Configure the Anthropic API key (only if you use the AI pipelines)
 
 ```powershell
 .\om_setup_ai_configuration.ps1
@@ -104,7 +146,7 @@ You can also create the AiConfiguration through Refinery Studio
 (`/general/configurations/new/ai`) — just use `RtWellKnownName=Anthropic` if
 you want the existing pipelines to find it without YAML edits.
 
-### 4. Deploy DataFlows to the mesh adapter
+### 5. Deploy DataFlows to the mesh adapter
 
 ```powershell
 .\om_deploy_dataflows.ps1
