@@ -62,7 +62,7 @@ In this folder you will find 10 PDF invoices: `data/testFiles/2_treasure_hunt/st
 - ApplyChanges@2
 ```
 
-For more information and examples see [OctoMesh Docs](https://docs.meshmakers.cloud/docs/technologyGuide/communication/dataPipelines/nodes/transformation/math_1) for details on the nodes.
+For more information and examples see [OctoMesh Docs](https://docs.meshmakers.cloud/docs/technologyGuide/communication/dataFlows/nodes/intro) for details on the nodes.
 
 ### 🎲 Stage 2: Anomaly Hunter (25 Points)
 **"Find the treasures in the data"**
@@ -192,7 +192,7 @@ Base64Encode@1           # Base64 encoding
 Hash@1                   # Hashing (e.g. MD5, SHA256)
 ```
 
-For more information and examples see [OctoMesh Docs](https://docs.meshmakers.cloud/docs/technologyGuide/communication/dataPipelines/nodes/transformation/math_1) for details on the nodes.
+For more information and examples see [OctoMesh Docs](https://docs.meshmakers.cloud/docs/technologyGuide/communication/dataFlows/nodes/intro) for details on the nodes.
 
 ### Useful Queries
 ```graphql
