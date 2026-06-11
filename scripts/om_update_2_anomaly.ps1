@@ -1,5 +1,5 @@
 param (
-    [string]$configuration = "DebugL"
+    [string]$configuration = "Release"
 )
 
 # Use -r (replace) so re-running the script is idempotent; otherwise ImportRt

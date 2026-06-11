@@ -124,7 +124,7 @@ Enthält 20 Rechnungen von 3 verschiedenen Firmen.
        - StageCompleted: Int
        - CodeFragment: String
    ```
-   Die echte CK-YAML-Syntax (mit `typeId`, `derivedFromCkTypeId`, separaten `attributes/*.yaml`-Dateien etc.) findest du in `docs/ConstructionKit-Quick-Reference.md` und in den bestehenden Dateien unter `src/ProcessAutomationDemo/ConstructionKit/`. Du musst das CK anschließend bauen (`dotnet build -c DebugL`) und neu importieren (`om_importck.ps1`).
+   Die echte CK-YAML-Syntax (mit `typeId`, `derivedFromCkTypeId`, separaten `attributes/*.yaml`-Dateien etc.) findest du in `docs/ConstructionKit-Quick-Reference.md` und in den bestehenden Dateien unter `src/ProcessAutomationDemo/ConstructionKit/`. Du musst das CK anschließend bauen (`dotnet build -c Release`) und neu importieren (`om_importck.ps1`).
 
 2. Erstelle eine Pipeline, die:
    - Pro Stufe ein `TreasureHunt`-Entity anlegt: `HunterName`

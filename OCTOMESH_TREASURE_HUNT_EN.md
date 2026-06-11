@@ -119,7 +119,7 @@ Contains 20 invoices from 3 different companies.
        - StageCompleted: Int
        - CodeFragment: String
    ```
-   The real CK YAML syntax (with `typeId`, `derivedFromCkTypeId`, separate `attributes/*.yaml` files etc.) can be found in `docs/ConstructionKit-Quick-Reference-EN.md` and in the existing files under `src/ProcessAutomationDemo/ConstructionKit/`. You then have to build the CK (`dotnet build -c DebugL`) and re-import it (`om_importck.ps1`).
+   The real CK YAML syntax (with `typeId`, `derivedFromCkTypeId`, separate `attributes/*.yaml` files etc.) can be found in `docs/ConstructionKit-Quick-Reference-EN.md` and in the existing files under `src/ProcessAutomationDemo/ConstructionKit/`. You then have to build the CK (`dotnet build -c Release`) and re-import it (`om_importck.ps1`).
 
 2. Build a pipeline that:
    - Creates a `TreasureHunt` entity for each completed stage: one per

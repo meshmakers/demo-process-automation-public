@@ -37,7 +37,7 @@ In addition, this demo needs:
 
 - .NET 10.0 SDK (for building the construction kit)
 - Build the construction kit before importing it:
-  `dotnet build src/ProcessAutomationDemo -c DebugL`
+  `dotnet build src/ProcessAutomationDemo -c Release`
 
 The committed sample data is wired to the mesh adapter that the
 getting-started Docker stack registers automatically (rtId
@@ -219,7 +219,7 @@ demo-process-automation/
 
 ```bash
 cd src/ProcessAutomationDemo
-dotnet build --configuration DebugL
+dotnet build --configuration Release
 ```
 
 The build process generates the deployable construction kit YAML files in the output directory.

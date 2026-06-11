@@ -316,7 +316,7 @@ dependencies:
 yamllint ConstructionKit/
 
 # Schema-Validierung und Kompilierung erfolgen beim .NET-Build:
-dotnet build -c DebugL
+dotnet build -c Release
 ```
 
 Beim Build werden YAML-Dateien gegen die JSON-Schemas validiert und durch
@@ -326,7 +326,7 @@ den ConstructionKit-Compiler in eine kompilierte CK-Bibliothek
 ### Deploy zu OctoMesh:
 ```bash
 # Kompilierte CK-YAML-Datei in den aktuellen Tenant importieren
-octo-cli -c ImportCk -f ./bin/DebugL/net10.0/octo-ck-libraries/<Project>/out/ck-<name>.yaml -w
+octo-cli -c ImportCk -f ./bin/Release/net10.0/octo-ck-libraries/<Project>/out/ck-<name>.yaml -w
 ```
 
 Mit `-w` wartet die CLI bis der Hangfire-Job abgeschlossen ist und meldet

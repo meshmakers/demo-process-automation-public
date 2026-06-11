@@ -329,7 +329,7 @@ gibt es kein `cardinality`-Feld – die Multiplizität lebt allein am `associati
 yamllint ConstructionKit/
 
 # Vollständige Schema-Validierung und Kompilierung erfolgen beim .NET-Build:
-dotnet build -c DebugL
+dotnet build -c Release
 ```
 
 Beim Build werden alle CK-YAML-Dateien gegen die JSON-Schemas validiert und
@@ -343,7 +343,7 @@ octo-cli -c UseContext -n <name>
 octo-cli -c LogIn -i
 
 # Kompilierte CK-YAML in den aktuellen Tenant importieren (mit -w warten)
-octo-cli -c ImportCk -f ./bin/DebugL/net10.0/octo-ck-libraries/<Project>/out/ck-<name>.yaml -w
+octo-cli -c ImportCk -f ./bin/Release/net10.0/octo-ck-libraries/<Project>/out/ck-<name>.yaml -w
 ```
 
 ## 7. Beispiel-Implementierung

@@ -1,5 +1,5 @@
 param (
-    [string]$configuration = "DebugL"
+    [string]$configuration = "Release"
 )
 
 octo-cli -c EnableCommunication
