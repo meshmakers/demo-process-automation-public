@@ -65,7 +65,7 @@ In diesem Ordner findest du 10 PDF-Rechnungen: `data/testFiles/2_treasure_hunt/s
 - ApplyChanges@2
 ```
 
-Für weitere Informationen und Beispiele siehe [OctoMesh Docs](https://docs.meshmakers.cloud/docs/technologyGuide/communication/dataPipelines/nodes/transformation/math_1) für Details zu den Nodes.
+Für weitere Informationen und Beispiele siehe [OctoMesh Docs](https://docs.meshmakers.cloud/docs/technologyGuide/communication/dataFlows/nodes/intro) für Details zu den Nodes.
 
 ### 🎲 Stufe 2: Anomaly Hunter (25 Punkte)
 **"Finde die Schätze in den Daten"**
@@ -197,7 +197,7 @@ Base64Encode@1           # Base64 Encoding
 Hash@1                   # Hashing (z.B. MD5, SHA256)
 ```
 
-Für weitere Informationen und Beispiele siehe [OctoMesh Docs](https://docs.meshmakers.cloud/docs/technologyGuide/communication/dataPipelines/nodes/transformation/math_1) für Details zu den Nodes.
+Für weitere Informationen und Beispiele siehe [OctoMesh Docs](https://docs.meshmakers.cloud/docs/technologyGuide/communication/dataFlows/nodes/intro) für Details zu den Nodes.
 
 ### Nützliche Queries
 ```graphql
