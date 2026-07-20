@@ -1,12 +1,12 @@
 # 🐙 OctoMesh Treasure Hunt Challenge 🏆
 
-## Gewinne eine exklusive OctoMesh-Tasse!
+## Gewinne einen Bluetooth-Speaker — oder ein Wellness-Wochenende!
 
 Willkommen zur **OctoMesh Treasure Hunt Challenge** - einem spannenden Pipeline-Wettbewerb, bei dem du deine Skills in Datenverarbeitung, AI-Integration und kreativer Problem-Lösung unter Beweis stellen kannst!
 
 ## 🎯 Das Ziel
 
-Konstruiere clevere OctoMesh-Pipelines, um versteckte Hinweise in Dokumenten zu finden, Anomalien zu entdecken und am Ende einen geheimen Schlüssel zu generieren. Der erste, der den korrekten Schlüssel einreicht, gewinnt eine limitierte **OctoMesh-Tasse** mit Logo!
+Konstruiere clevere OctoMesh-Pipelines, um versteckte Hinweise in Dokumenten zu finden, Anomalien zu entdecken und am Ende einen geheimen Schlüssel zu generieren. Eine Jury bewertet alle korrekten Einreichungen nach Korrektheit, Kreativität und Eleganz: Die **Top 10** gewinnen einen **Bluetooth-Speaker**, die **beste Einreichung** ein **Wellness-Wochenende**!
 
 ## 📋 Voraussetzungen
 
@@ -71,7 +71,7 @@ Für weitere Informationen und Beispiele siehe [OctoMesh Docs](https://docs.mesh
 **"Finde die Schätze in den Daten"**
 
 Upload-Verzeichnis: `data/testFiles/2_treasure_hunt/stage2/`
-Enthält 20 Rechnungen von 3 verschiedenen Firmen.
+Enthält 21 Rechnungen von 3 verschiedenen Firmen.
 
 **Deine Aufgabe:**
 1. Nutze die `detect_anomalies_amount_spike_estimation` Pipeline als
@@ -156,8 +156,11 @@ nutzt du `Hash@1` (`algorithm: Md5`, `inputFormat: String`).
 
 ## 📊 Bewertung & Bonus-Punkte
 
-### Hauptpreis
-- Erster korrekter Schlüssel: **OctoMesh Tasse mit Logo**
+### Preise
+Alle Einreichungen mit korrektem Schlüssel werden von einer Jury nach
+**Korrektheit, Kreativität und Eleganz** bewertet:
+- **Top 10**: Bluetooth-Speaker
+- **Beste Einreichung**: Wellness-Wochenende
 
 ### Bonus-Kategorien (je 10 Punkte extra)
 - **🎨 Eleganz-Award**: Sauberste, best-dokumentierte Pipeline
@@ -225,17 +228,20 @@ Die Standardwerte (`-tenant meshtest`, `-baseUrl https://localhost:5020`) passen
 
 ## 📤 Einreichung
 
-1. **Dokumentiere deine Lösung** in einer `SOLUTION.md` Datei mit:
+1. **Arbeite in einem öffentlichen Fork** von
+   [`meshmakers/demo-process-automation-public`](https://github.com/meshmakers/demo-process-automation-public)
+   und dokumentiere deine Lösung dort in einer `SOLUTION.md` Datei mit:
    - Alle erstellten Pipelines (YAML)
    - Construction Kit Erweiterungen
    - Zwischenergebnisse (Code A, B, C)
    - Finaler Schlüssel
 
-2. **Sende deine Lösung** an: `treasurehunt@meshmakers.io`
-   - Betreff: "OctoMesh Treasure Hunt - [Dein Name]"
-   - Anhänge: SOLUTION.md, Pipeline-YAMLs
+2. **Reiche auf der Challenge-Website ein — nicht per E-Mail.** Nutze das
+   Einreichungsformular auf der WeAreDevelopers-Landing-Page (die Seite,
+   die dich hierher gebracht hat) und trage deine Fork-URL und deinen
+   geheimen Schlüssel ein.
 
-3. **Deadline**: [Wird noch bekannt gegeben]
+3. **Deadline**: 31. August 2026
 
 ## 💡 Tipps
 
@@ -257,6 +263,6 @@ Möge die beste Pipeline gewinnen! Zeigt uns, was ihr mit OctoMesh alles anstell
 
 ---
 
-*PS: Die Tasse ist nicht nur ein Sammlerstück, sondern auch der perfekte Begleiter für lange Coding-Sessions mit OctoMesh!*
+*PS: Der Speaker ist der perfekte Begleiter für lange Coding-Sessions mit OctoMesh — und das Wellness-Wochenende brauchst du danach!*
 
 **#OctoMeshTreasureHunt #DataMesh #PipelineChallenge**

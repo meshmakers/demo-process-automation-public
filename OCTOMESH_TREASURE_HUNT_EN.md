@@ -1,12 +1,12 @@
 # 🐙 OctoMesh Treasure Hunt Challenge 🏆
 
-## Win an exclusive OctoMesh mug!
+## Win a Bluetooth speaker — or a wellness weekend!
 
 Welcome to the **OctoMesh Treasure Hunt Challenge** - an exciting pipeline competition where you can prove your skills in data processing, AI integration and creative problem-solving!
 
 ## 🎯 The Goal
 
-Build clever OctoMesh pipelines to find hidden clues in documents, detect anomalies, and ultimately generate a secret key. The first to submit the correct key wins a limited-edition **OctoMesh mug** with logo!
+Build clever OctoMesh pipelines to find hidden clues in documents, detect anomalies, and ultimately generate a secret key. A jury rates all correct submissions on correctness, creativity and elegance: the **top 10** win a **Bluetooth speaker**, and the **best submission** wins a **wellness weekend**!
 
 ## 📋 Prerequisites
 
@@ -68,7 +68,7 @@ For more information and examples see [OctoMesh Docs](https://docs.meshmakers.cl
 **"Find the treasures in the data"**
 
 Upload directory: `data/testFiles/2_treasure_hunt/stage2/`
-Contains 20 invoices from 3 different companies.
+Contains 21 invoices from 3 different companies.
 
 **Your task:**
 1. Use the `detect_anomalies_amount_spike_estimation` pipeline as a
@@ -151,8 +151,11 @@ hex characters; prefix that with `OCTO-2025-`. Use `Hash@1`
 
 ## 📊 Scoring & Bonus Points
 
-### Main Prize
-- First correct key: **OctoMesh mug with logo**
+### Prizes
+All submissions with a correct key are rated by a jury on **correctness,
+creativity and elegance**:
+- **Top 10**: Bluetooth speaker
+- **Best submission**: wellness weekend
 
 ### Bonus Categories (10 extra points each)
 - **🎨 Elegance Award**: Cleanest, best-documented pipeline
@@ -220,17 +223,19 @@ The default values (`-tenant meshtest`, `-baseUrl https://localhost:5020`) work 
 
 ## 📤 Submission
 
-1. **Document your solution** in a `SOLUTION.md` file with:
+1. **Work in a public fork** of
+   [`meshmakers/demo-process-automation-public`](https://github.com/meshmakers/demo-process-automation-public)
+   and document your solution there in a `SOLUTION.md` file with:
    - All created pipelines (YAML)
    - Construction Kit extensions
    - Intermediate results (Code A, B, C)
    - Final key
 
-2. **Send your solution** to: `treasurehunt@meshmakers.io`
-   - Subject: "OctoMesh Treasure Hunt - [Your Name]"
-   - Attachments: SOLUTION.md, pipeline YAMLs
+2. **Submit on the challenge website — not by e-mail.** Use the submission
+   form on the WeAreDevelopers landing page (the site that brought you
+   here) and enter your fork URL and your secret key.
 
-3. **Deadline**: [To be announced]
+3. **Deadline**: 31 August 2026
 
 ## 💡 Tips
 
@@ -252,6 +257,6 @@ May the best pipeline win! Show us what you can do with OctoMesh!
 
 ---
 
-*PS: The mug is not just a collector's item, but also the perfect companion for long coding sessions with OctoMesh!*
+*PS: The speaker is the perfect companion for long coding sessions with OctoMesh — and the wellness weekend is what you'll need after them!*
 
 **#OctoMeshTreasureHunt #DataMesh #PipelineChallenge**
