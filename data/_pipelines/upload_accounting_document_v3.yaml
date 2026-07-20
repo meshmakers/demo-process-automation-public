@@ -22,7 +22,7 @@ entities:
         targetRtId: 68e24109cd702ddd247d4eb4
         targetCkTypeId: System.Communication/DataFlow
       - roleId: System.Communication/Executes
-        targetRtId: 66004fda527ac79a03ecedd7
+        targetRtId: "670000000000000000000002"
         targetCkTypeId: System.Communication/Adapter
       - roleId: System.Communication/Uses
         targetRtId: aa0d15c00000000000a1c0a1
