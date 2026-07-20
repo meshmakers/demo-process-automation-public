@@ -39,9 +39,11 @@ In addition, this demo needs:
 - Build the construction kit before importing it:
   `dotnet build src/ProcessAutomationDemo -c Release`
 
-The committed sample data is wired to the mesh adapter that the
-getting-started Docker stack registers automatically (rtId
-`66004fda527ac79a03ecedd7`), so no extra adapter setup is required.
+The committed sample data is wired to the well-known mesh adapter that
+`System.Communication` seeds on every Communication-enabled tenant (rtId
+`"670000000000000000000002"`), so no extra adapter setup is required.
+The id is all-digit, so it must stay quoted in YAML — unquoted it parses
+as an integer and fails schema validation.
 
 ### 1. Create the demo tenant
 
@@ -98,6 +100,12 @@ Imports the custom accounting demo model and automatically pulls the `Basic` con
 
 No bundled Basic CK is shipped — any recent OctoMesh installation with public-catalog access will resolve it on import.
 
+The script finishes by restarting the `octo-mesh-adapter` container. This
+is required: the adapter caches CK types at startup, which happens before
+this tenant existed or had reporting enabled. Without the restart, the
+first document upload fails with
+`RtCkTypeId 'System.Reporting/FolderRoot' not found in CkCache`.
+
 ### 3. Import Runtime Data
 
 ```powershell
@@ -105,10 +113,12 @@ No bundled Basic CK is shipped — any recent OctoMesh installation with public-
 ```
 
 Loads sample data including:
-- Document processing pipelines
-- Anomaly detection algorithms
-- Pre-configured queries
-- Mesh adapter entity (upserts onto the existing one Docker registered)
+- Document processing pipelines (v1/v2/v3 upload + excel)
+- Mesh adapter entity (upserts onto the existing seeded adapter)
+
+The anomaly-detection pipelines and the pre-built queries are **not** part
+of this step — they are imported by `om_update_2_anomaly.ps1`, run
+separately ahead of the Unit 2 demo.
 
 The script imports with `-r` (Upsert), so re-running it against an existing
 tenant is safe.
