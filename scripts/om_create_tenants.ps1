@@ -48,7 +48,18 @@ octo-cli -c Create -tid $tenantId -db $tenantId
 # (and that a first-time user doesn't yet have).
 $tenantContextName = "local_$tenantId"
 
-# -rsu is optional - only pass it through when the source context has it set
+# The system context registered by getting-started's om-login-local.ps1 has
+# no reporting URL, but this demo needs one (EnableReporting, folder-root
+# import). When it's missing, derive it from the asset URL's host: the
+# getting-started stack publishes octo-reporting-services on port 5007
+# (AB#4443).
+$reportingUrl = $opts.ReportingServiceUrl
+if (-not $reportingUrl) {
+    $assetUri = [Uri]$opts.AssetServiceUrl
+    $reportingUrl = "$($assetUri.Scheme)://$($assetUri.Host):5007/"
+    Write-Host "Context '$systemContextName' has no reporting URL - defaulting to $reportingUrl"
+}
+
 $addContextArgs = @(
     '-c', 'AddContext',
     '-n', $tenantContextName,
@@ -56,11 +67,9 @@ $addContextArgs = @(
     '-asu', $opts.AssetServiceUrl,
     '-bsu', $opts.BotServiceUrl,
     '-csu', $opts.CommunicationServiceUrl,
+    '-rsu', $reportingUrl,
     '-tid', $tenantId
 )
-if ($opts.ReportingServiceUrl) {
-    $addContextArgs += @('-rsu', $opts.ReportingServiceUrl)
-}
 octo-cli @addContextArgs
 
 # Switch to the new tenant context so subsequent tenant-scoped
@@ -77,9 +86,7 @@ Write-Host "   Identity      : $($opts.IdentityServiceUrl)"
 Write-Host "   Asset         : $($opts.AssetServiceUrl)"
 Write-Host "   Bot           : $($opts.BotServiceUrl)"
 Write-Host "   Communication : $($opts.CommunicationServiceUrl)"
-if ($opts.ReportingServiceUrl) {
-    Write-Host "   Reporting     : $($opts.ReportingServiceUrl)"
-}
+Write-Host "   Reporting     : $reportingUrl"
 Write-Host ""
 Write-Host " NEXT STEP (required, interactive):"
 Write-Host "   octo-cli -c LogIn -i"
