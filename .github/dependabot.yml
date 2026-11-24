@@ -1,25 +1,17 @@
 # Dependabot standard configuration.
-# One entry per ecosystem and manifest directory, minor/patch updates grouped, an explicit
-# open-pull-requests-limit, and the majors we hold on purpose ignored (remove an ignore only
-# together with the story that delivers that migration).
+# One entry per ecosystem and manifest directory list, run monthly. All minor and patch updates
+# of an ecosystem arrive in one pull request per manifest directory; the low
+# open-pull-requests-limit keeps majors that are not ignored from piling up. The majors we hold
+# on purpose are ignored (remove an ignore only together with the story that delivers that
+# migration).
 version: 2
 updates:
   - package-ecosystem: "nuget"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 5
+      interval: "monthly"
+    open-pull-requests-limit: 2
     groups:
-      runtime-aligned:
-        patterns: ["Microsoft.Extensions.*", "Microsoft.AspNetCore.*", "System.Text.Json", "System.Composition.*", "System.Security.Cryptography.*"]
-        update-types: ["minor", "patch"]
-      test-tooling:
-        patterns: ["xunit*", "TUnit*", "Microsoft.NET.Test.Sdk", "coverlet.*", "Microsoft.Testing.*", "Moq*", "NSubstitute*", "FakeItEasy*", "FluentAssertions*", "Testcontainers*", "MartinCostello.Logging.XUnit*"]
-        update-types: ["minor", "patch"]
-      meshmakers:
-        patterns: ["Meshmakers.*"]
-        update-types: ["minor", "patch"]
       nuget-minor-patch:
         patterns: ["*"]
         update-types: ["minor", "patch"]
